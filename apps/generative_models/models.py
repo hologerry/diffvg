@@ -3,8 +3,8 @@
 import torch as th
 import ttools
 
-import rendering
-import modules
+from . import rendering
+from . import modules
 
 LOG = ttools.get_logger(__name__)
 
@@ -29,6 +29,7 @@ class BaseVectorModel(BaseModel):
 
 class BezierVectorGenerator(BaseVectorModel):
     NUM_SEGMENTS = 2
+
     def __init__(self, num_strokes=4,
                  zdim=128, width=32, imsize=32,
                  color_output=False,
@@ -61,7 +62,7 @@ class BezierVectorGenerator(BaseVectorModel):
 
         # 4 points bezier with n_segments -> 3*n_segments + 1 points
         self.point_predictor = th.nn.Sequential(
-            th.nn.Linear(8*width, 
+            th.nn.Linear(8*width,
                          2*self.num_strokes*(
                              BezierVectorGenerator.NUM_SEGMENTS*3 + 1)),
             th.nn.Tanh()  # bound spatial extent
@@ -106,8 +107,8 @@ class BezierVectorGenerator(BaseVectorModel):
             bs, self.num_strokes, BezierVectorGenerator.NUM_SEGMENTS*3+1, 2)
 
         output, scenes = rendering.bezier_render(all_points, all_widths, all_alphas,
-                                         colors=all_colors,
-                                         canvas_size=self.imsize)
+                                                 colors=all_colors,
+                                                 canvas_size=self.imsize)
 
         # map to [-1, 1]
         output = output*2.0 - 1.0
@@ -191,8 +192,8 @@ class VectorGenerator(BaseVectorModel):
 
         all_points = all_points.view(bs, self.num_strokes, 2, 2)
         output, scenes = rendering.line_render(all_points, all_widths, all_alphas,
-                                       colors=all_colors,
-                                       canvas_size=self.imsize)
+                                               colors=all_colors,
+                                               canvas_size=self.imsize)
 
         # map to [-1, 1]
         output = output*2.0 - 1.0
@@ -207,7 +208,6 @@ class RNNVectorGenerator(BaseVectorModel):
                  color_output=False,
                  num_layers=3, stroke_width=None):
         super(RNNVectorGenerator, self).__init__()
-
 
         if stroke_width is None:
             self.stroke_width = (0.5, 3.0)
@@ -278,7 +278,7 @@ class RNNVectorGenerator(BaseVectorModel):
         all_widths = (max_width - min_width) * all_widths + min_width
 
         output, scenes = rendering.line_render(all_points, all_widths, all_alphas,
-                                        canvas_size=self.imsize)
+                                               canvas_size=self.imsize)
 
         # map to [-1, 1]
         output = output*2.0 - 1.0
@@ -288,6 +288,7 @@ class RNNVectorGenerator(BaseVectorModel):
 
 class ChainRNNVectorGenerator(BaseVectorModel):
     """Strokes form a single long chain."""
+
     def __init__(self, num_strokes=64,
                  zdim=128, width=32, imsize=32,
                  hidden_size=512, dropout=0.9,
@@ -371,7 +372,7 @@ class ChainRNNVectorGenerator(BaseVectorModel):
         all_widths = (max_width - min_width) * all_widths + min_width
 
         output, scenes = rendering.line_render(all_points, all_widths, all_alphas,
-                                        canvas_size=self.imsize)
+                                               canvas_size=self.imsize)
 
         # map to [-1, 1]
         output = output*2.0 - 1.0

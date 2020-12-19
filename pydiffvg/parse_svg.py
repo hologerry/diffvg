@@ -1,22 +1,27 @@
-import torch
-import xml.etree.ElementTree as etree
-import numpy as np
-import diffvg
+import logging
 import os
-import pydiffvg
-import svgpathtools
-import svgpathtools.parser
 import re
 import warnings
+import xml.etree.ElementTree as etree
+
 import cssutils
-import logging
+# import diffvg
+import numpy as np
+# import svgpathtools
+# import svgpathtools.parser
+import torch
+
+import pydiffvg
+
 cssutils.log.setLevel(logging.ERROR)
+
 
 def remove_namespaces(s):
     """
         {...} ... -> ...
     """
     return re.sub('{.*}', '', s)
+
 
 def parse_style(s, defs):
     style_dict = {}
@@ -32,6 +37,7 @@ def parse_style(s, defs):
             style_dict[key] = value
     return style_dict
 
+
 def parse_hex(s):
     """
         Hex to tuple
@@ -44,11 +50,13 @@ def parse_hex(s):
     # return torch.pow(torch.tensor([rgb[0] / 255.0, rgb[1] / 255.0, rgb[2] / 255.0]), 2.2)
     return torch.pow(torch.tensor([rgb[0] / 255.0, rgb[1] / 255.0, rgb[2] / 255.0]), 1.0)
 
+
 def parse_int(s):
     """
         trim alphabets
     """
     return int(float(''.join(i for i in s if (not i.isalpha()))))
+
 
 def parse_color(s, defs):
     if s is None:
@@ -74,6 +82,8 @@ def parse_color(s, defs):
     return color
 
 # https://github.com/mathandy/svgpathtools/blob/7ebc56a831357379ff22216bec07e2c12e8c5bc6/svgpathtools/parser.py
+
+
 def _parse_transform_substr(transform_substr):
     type_str, value_str = transform_substr.split('(')
     value_str = value_str.replace(',', ' ')
@@ -114,6 +124,7 @@ def _parse_transform_substr(transform_substr):
         warnings.warn('Unknown SVG transform type: {0}'.format(type_str))
     return transform
 
+
 def parse_transform(transform_str):
     """
         Converts a valid SVG transformation string into a 3x3 matrix.
@@ -130,6 +141,7 @@ def parse_transform(transform_str):
         total_transform = total_transform.dot(_parse_transform_substr(substr))
 
     return torch.from_numpy(total_transform).type(torch.float32)
+
 
 def parse_linear_gradient(node, transform, defs):
     begin = torch.tensor([0.0, 0.0])
@@ -257,6 +269,7 @@ def parse_radial_gradient(node, transform, defs):
 
     return pydiffvg.RadialGradient(begin, end, offsets, stop_colors)
 
+
 def parse_stylesheet(node, transform, defs):
     # collect CSS classes
     sheet = cssutils.parseString(node.text)
@@ -266,6 +279,7 @@ def parse_stylesheet(node, transform, defs):
             if len(name) >= 2 and name[0] == '.':
                 defs[name[1:]] = parse_style(rule.style.getCssText(), defs)
     return defs
+
 
 def parse_defs(node, transform, defs):
     for child in node:
@@ -279,6 +293,7 @@ def parse_defs(node, transform, defs):
         elif tag == 'style':
             defs = parse_stylesheet(child, transform, defs)
     return defs
+
 
 def parse_common_attrib(node, transform, fill_color, defs):
     attribs = {}
@@ -378,8 +393,10 @@ def parse_common_attrib(node, transform, fill_color, defs):
 
     return new_transform, fill_color, stroke_color, stroke_width, use_even_odd_rule
 
+
 def is_shape(tag):
     return tag == 'path' or tag == 'polygon' or tag == 'line' or tag == 'circle' or tag == 'rect'
+
 
 def parse_shape(node, transform, fill_color, shapes, shape_groups, defs):
     tag = remove_namespaces(node.tag)
@@ -396,16 +413,16 @@ def parse_shape(node, transform, fill_color, shapes, shape_groups, defs):
             assert(path.points.shape[1] == 2)
             path.stroke_width = stroke_width
             path.source_id = name
-            path.id = "{}-{}".format(name,idx) if len(paths)>1 else name
+            path.id = "{}-{}".format(name, idx) if len(paths) > 1 else name
         prev_shapes_size = len(shapes)
         shapes = shapes + paths
         shape_ids = torch.tensor(list(range(prev_shapes_size, len(shapes))))
-        shape_groups.append(pydiffvg.ShapeGroup(\
-            shape_ids = shape_ids,
-            fill_color = new_fill_color,
-            stroke_color = stroke_color,
-            use_even_odd_rule = use_even_odd_rule,
-            id = name))
+        shape_groups.append(pydiffvg.ShapeGroup(
+            shape_ids=shape_ids,
+            fill_color=new_fill_color,
+            stroke_color=stroke_color,
+            use_even_odd_rule=use_even_odd_rule,
+            id=name))
     elif tag == 'polygon':
         name = ''
         if 'id' in node.attrib:
@@ -420,13 +437,13 @@ def parse_shape(node, transform, fill_color, shapes, shape_groups, defs):
         polygon.stroke_width = stroke_width
         shape_ids = torch.tensor([len(shapes)])
         shapes.append(polygon)
-        shape_groups.append(pydiffvg.ShapeGroup(\
-            shape_ids = shape_ids,
-            fill_color = new_fill_color,
-            stroke_color = stroke_color,
-            use_even_odd_rule = use_even_odd_rule,
-            shape_to_canvas = new_transform,
-            id = name))
+        shape_groups.append(pydiffvg.ShapeGroup(
+            shape_ids=shape_ids,
+            fill_color=new_fill_color,
+            stroke_color=stroke_color,
+            use_even_odd_rule=use_even_odd_rule,
+            shape_to_canvas=new_transform,
+            id=name))
     elif tag == 'line':
         x1 = float(node.attrib['x1'])
         y1 = float(node.attrib['y1'])
@@ -439,12 +456,12 @@ def parse_shape(node, transform, fill_color, shapes, shape_groups, defs):
         line.stroke_width = stroke_width
         shape_ids = torch.tensor([len(shapes)])
         shapes.append(line)
-        shape_groups.append(pydiffvg.ShapeGroup(\
-            shape_ids = shape_ids,
-            fill_color = new_fill_color,
-            stroke_color = stroke_color,
-            use_even_odd_rule = use_even_odd_rule,
-            shape_to_canvas = new_transform))
+        shape_groups.append(pydiffvg.ShapeGroup(
+            shape_ids=shape_ids,
+            fill_color=new_fill_color,
+            stroke_color=stroke_color,
+            use_even_odd_rule=use_even_odd_rule,
+            shape_to_canvas=new_transform))
     elif tag == 'circle':
         radius = float(node.attrib['r'])
         cx = float(node.attrib['cx'])
@@ -453,17 +470,17 @@ def parse_shape(node, transform, fill_color, shapes, shape_groups, defs):
         if 'id' in node.attrib:
             name = node.attrib['id']
         center = torch.tensor([cx, cy])
-        circle = pydiffvg.Circle(radius = torch.tensor(radius),
-                                 center = center)
+        circle = pydiffvg.Circle(radius=torch.tensor(radius),
+                                 center=center)
         circle.stroke_width = stroke_width
         shape_ids = torch.tensor([len(shapes)])
         shapes.append(circle)
-        shape_groups.append(pydiffvg.ShapeGroup(\
-            shape_ids = shape_ids,
-            fill_color = new_fill_color,
-            stroke_color = stroke_color,
-            use_even_odd_rule = use_even_odd_rule,
-            shape_to_canvas = new_transform))
+        shape_groups.append(pydiffvg.ShapeGroup(
+            shape_ids=shape_ids,
+            fill_color=new_fill_color,
+            stroke_color=stroke_color,
+            use_even_odd_rule=use_even_odd_rule,
+            shape_to_canvas=new_transform))
     elif tag == 'ellipse':
         rx = float(node.attrib['rx'])
         ry = float(node.attrib['ry'])
@@ -473,17 +490,18 @@ def parse_shape(node, transform, fill_color, shapes, shape_groups, defs):
         if 'id' in node.attrib:
             name = node.attrib['id']
         center = torch.tensor([cx, cy])
-        circle = pydiffvg.Circle(radius = torch.tensor(radius),
-                                 center = center)
+        radius = torch.tensor([rx, ry])
+        circle = pydiffvg.Ellipse(radius=torch.tensor(radius),
+                                  center=center)
         circle.stroke_width = stroke_width
         shape_ids = torch.tensor([len(shapes)])
         shapes.append(circle)
-        shape_groups.append(pydiffvg.ShapeGroup(\
-            shape_ids = shape_ids,
-            fill_color = new_fill_color,
-            stroke_color = stroke_color,
-            use_even_odd_rule = use_even_odd_rule,
-            shape_to_canvas = new_transform))
+        shape_groups.append(pydiffvg.ShapeGroup(
+            shape_ids=shape_ids,
+            fill_color=new_fill_color,
+            stroke_color=stroke_color,
+            use_even_odd_rule=use_even_odd_rule,
+            shape_to_canvas=new_transform))
     elif tag == 'rect':
         x = 0.0
         y = 0.0
@@ -495,17 +513,18 @@ def parse_shape(node, transform, fill_color, shapes, shape_groups, defs):
         h = float(node.attrib['height'])
         p_min = torch.tensor([x, y])
         p_max = torch.tensor([x + w, x + h])
-        rect = pydiffvg.Rect(p_min = p_min, p_max = p_max)
+        rect = pydiffvg.Rect(p_min=p_min, p_max=p_max)
         rect.stroke_width = stroke_width
         shape_ids = torch.tensor([len(shapes)])
         shapes.append(rect)
-        shape_groups.append(pydiffvg.ShapeGroup(\
-            shape_ids = shape_ids,
-            fill_color = new_fill_color,
-            stroke_color = stroke_color,
-            use_even_odd_rule = use_even_odd_rule,
-            shape_to_canvas = new_transform))
+        shape_groups.append(pydiffvg.ShapeGroup(
+            shape_ids=shape_ids,
+            fill_color=new_fill_color,
+            stroke_color=stroke_color,
+            use_even_odd_rule=use_even_odd_rule,
+            shape_to_canvas=new_transform))
     return shapes, shape_groups
+
 
 def parse_group(node, transform, fill_color, shapes, shape_groups, defs):
     if 'transform' in node.attrib:
@@ -515,12 +534,13 @@ def parse_group(node, transform, fill_color, shapes, shape_groups, defs):
     for child in node:
         tag = remove_namespaces(child.tag)
         if is_shape(tag):
-            shapes, shape_groups = parse_shape(\
+            shapes, shape_groups = parse_shape(
                 child, transform, fill_color, shapes, shape_groups, defs)
         elif tag == 'g':
-            shapes, shape_groups = parse_group(\
+            shapes, shape_groups = parse_group(
                 child, transform, fill_color, shapes, shape_groups, defs)
     return shapes, shape_groups
+
 
 def parse_scene(node):
     canvas_width = -1
@@ -556,12 +576,13 @@ def parse_scene(node):
             if 'id' in child.attrib:
                 defs[child.attrib['id']] = parse_radial_gradient(child, transform, defs)
         elif is_shape(tag):
-            shapes, shape_groups = parse_shape(\
+            shapes, shape_groups = parse_shape(
                 child, transform, fill_color, shapes, shape_groups, defs)
         elif tag == 'g':
-            shapes, shape_groups = parse_group(\
+            shapes, shape_groups = parse_group(
                 child, transform, fill_color, shapes, shape_groups, defs)
     return canvas_width, canvas_height, shapes, shape_groups
+
 
 def svg_to_scene(filename):
     """

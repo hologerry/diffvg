@@ -1,22 +1,23 @@
+from subprocess import call
 import pydiffvg_tensorflow as pydiffvg
 import tensorflow as tf
-import skimage
-import numpy as np
+# import skimage
+# import numpy as np
 
 canvas_width = 256
 canvas_height = 256
-circle = pydiffvg.Circle(radius = tf.constant(40.0),
-                         center = tf.constant([128.0, 128.0]))
+circle = pydiffvg.Circle(radius=tf.constant(40.0),
+                         center=tf.constant([128.0, 128.0]))
 shapes = [circle]
-circle_group = pydiffvg.ShapeGroup(shape_ids = tf.constant([0], dtype = tf.int32),
-    fill_color = tf.constant([0.3, 0.6, 0.3, 1.0]))
+circle_group = pydiffvg.ShapeGroup(shape_ids=tf.constant([0], dtype=tf.int32),
+                                   fill_color=tf.constant([0.3, 0.6, 0.3, 1.0]))
 shape_groups = [circle_group]
-scene_args = pydiffvg.serialize_scene(\
+scene_args = pydiffvg.serialize_scene(
     canvas_width, canvas_height, shapes, shape_groups)
 
 render = pydiffvg.render
-img = render(tf.constant(256), # width
-             tf.constant(256), # height
+img = render(tf.constant(256),  # width
+             tf.constant(256),  # height
              tf.constant(2),   # num_samples_x
              tf.constant(2),   # num_samples_y
              tf.constant(0),   # seed
@@ -33,10 +34,10 @@ color = tf.Variable([0.3, 0.2, 0.8, 1.0])
 circle.radius = radius_n * 256
 circle.center = center_n * 256
 circle_group.fill_color = color
-scene_args = pydiffvg.serialize_scene(\
+scene_args = pydiffvg.serialize_scene(
     canvas_width, canvas_height, shapes, shape_groups)
-img = render(tf.constant(256), # width
-             tf.constant(256), # height
+img = render(tf.constant(256),  # width
+             tf.constant(256),  # height
              tf.constant(2),   # num_samples_x
              tf.constant(2),   # num_samples_y
              tf.constant(1),   # seed
@@ -55,10 +56,10 @@ for t in range(100):
         circle_group.fill_color = color
         # Important to use a different seed every iteration, otherwise the result
         # would be biased.
-        scene_args = pydiffvg.serialize_scene(\
+        scene_args = pydiffvg.serialize_scene(
             canvas_width, canvas_height, shapes, shape_groups)
-        img = render(tf.constant(256), # width
-                     tf.constant(256), # height
+        img = render(tf.constant(256),  # width
+                     tf.constant(256),  # height
                      tf.constant(2),   # num_samples_x
                      tf.constant(2),   # num_samples_y
                      tf.constant(t+1),   # seed,
@@ -76,10 +77,10 @@ for t in range(100):
 circle.radius = radius_n * 256
 circle.center = center_n * 256
 circle_group.fill_color = color
-scene_args = pydiffvg.serialize_scene(\
+scene_args = pydiffvg.serialize_scene(
     canvas_width, canvas_height, shapes, shape_groups)
-img = render(tf.constant(256), # width
-             tf.constant(256), # height
+img = render(tf.constant(256),  # width
+             tf.constant(256),  # height
              tf.constant(2),   # num_samples_x
              tf.constant(2),   # num_samples_y
              tf.constant(101),   # seed
@@ -88,7 +89,6 @@ img = render(tf.constant(256), # width
 pydiffvg.imwrite(img.cpu(), 'results/single_circle_tf/final.png')
 
 # Convert the intermediate renderings to a video.
-from subprocess import call
 call(["ffmpeg", "-framerate", "24", "-i",
-    "results/single_circle_tf/iter_%d.png", "-vb", "20M",
-    "results/single_circle_tf/out.mp4"])
+      "results/single_circle_tf/iter_%d.png", "-vb", "20M",
+      "results/single_circle_tf/out.mp4"])

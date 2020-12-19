@@ -1,12 +1,15 @@
 import argparse
-import skimage.io
-import numpy as np
-from matplotlib import cm
 import math
+
+import numpy as np
+import skimage.io
+from matplotlib import cm
 from skimage.metrics import structural_similarity as ssim
+
 
 def normalize(x, min_, max_):
     return (x - min_) / (max_ - min_)
+
 
 def main(args):
     img1 = skimage.img_as_float(skimage.io.imread(args.img1)).astype(np.float32)
@@ -16,8 +19,8 @@ def main(args):
     img2 = img2[:, :, :3]
     ref = ref[:, :, :3]
 
-    diff1 = np.sum(np.abs(img1 - ref), axis = 2)
-    diff2 = np.sum(np.abs(img2 - ref), axis = 2)
+    diff1 = np.sum(np.abs(img1 - ref), axis=2)
+    diff2 = np.sum(np.abs(img2 - ref), axis=2)
     min_ = min(np.min(diff1), np.min(diff2))
     max_ = max(np.max(diff1), np.max(diff2)) * 0.5
     diff1 = cm.viridis(normalize(diff1, min_, max_))
@@ -35,6 +38,7 @@ def main(args):
 
     skimage.io.imsave('diff1.png', (diff1 * 255).astype(np.uint8))
     skimage.io.imsave('diff2.png', (diff2 * 255).astype(np.uint8))
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

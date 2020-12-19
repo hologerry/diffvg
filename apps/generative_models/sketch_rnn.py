@@ -1,25 +1,23 @@
 #!/bin/env python
 """Train a Sketch-RNN."""
 import argparse
-from enum import Enum
 import os
-import wget
+# from enum import Enum
 
 import numpy as np
+import pydiffvg
 import torch as th
-from torch.utils.data import DataLoader
-import torchvision.datasets as dset
-import torchvision.transforms as transforms
-
+# import torchvision.datasets as dset
+# import torchvision.transforms as transforms
 import ttools
 import ttools.interfaces
-from ttools.modules import networks
+# import wget
+from torch.utils.data import DataLoader
+# from ttools.modules import networks
 
-import pydiffvg
-
-import rendering
-import losses
-import data
+from . import data
+from . import losses
+from . import rendering
 
 LOG = ttools.get_logger(__name__)
 
@@ -85,6 +83,7 @@ class SketchRNN(th.nn.Module):
             - 1 logit for each Gaussian (the mixture weight)
             - 3 logits for the state triplet probabilities
         """
+
         def __init__(self, hidden_size=512, dropout=0.9, zdim=128,
                      num_layers=1, num_gaussians=20):
             super(SketchRNN.Decoder, self).__init__()
@@ -234,6 +233,7 @@ class SketchRNN(th.nn.Module):
 
 class SketchRNNCallback(ttools.callbacks.ImageDisplayCallback):
     """Simple callback that visualize images."""
+
     def visualized_image(self, batch, step_data, is_val=False):
         if not is_val:
             # No need to render training data

@@ -1,27 +1,27 @@
 #!/bin/env python
 """Train a Sketch-VAE."""
 import argparse
-from enum import Enum
 import os
-import wget
-import time
+# import time
+# from enum import Enum
 
 import numpy as np
+import pydiffvg
 import torch as th
-from torch.utils.data import DataLoader
-import torchvision.datasets as dset
-import torchvision.transforms as transforms
+# import torchvision.datasets as dset
+# import torchvision.transforms as transforms
 
 import ttools
 import ttools.interfaces
-from ttools.modules import networks
+# import wget
 
-import rendering
-import losses
-import modules
-import data
+from torch.utils.data import DataLoader
+# from ttools.modules import networks
 
-import pydiffvg
+from . import data
+from . import losses
+from . import modules
+from . import rendering
 
 LOG = ttools.get_logger(__name__)
 
@@ -44,32 +44,32 @@ class SketchVAE(th.nn.Module):
 
                 th.nn.Conv2d(width, width, 5, padding=2),
                 th.nn.InstanceNorm2d(width),
-                th.nn.ReLU( inplace=True),
+                th.nn.ReLU(inplace=True),
                 # 64x64
 
                 th.nn.Conv2d(width, 2*width, 5, stride=1, padding=2),
                 th.nn.InstanceNorm2d(2*width),
-                th.nn.ReLU( inplace=True),
+                th.nn.ReLU(inplace=True),
                 # 32x32
 
                 th.nn.Conv2d(2*width, 2*width, 5, stride=2, padding=2),
                 th.nn.InstanceNorm2d(2*width),
-                th.nn.ReLU( inplace=True),
+                th.nn.ReLU(inplace=True),
                 # 16x16
 
                 th.nn.Conv2d(2*width, 2*width, 5, stride=2, padding=2),
                 th.nn.InstanceNorm2d(2*width),
-                th.nn.ReLU( inplace=True),
+                th.nn.ReLU(inplace=True),
                 # 16x16
 
                 th.nn.Conv2d(2*width, 2*width, 5, stride=2, padding=2),
                 th.nn.InstanceNorm2d(2*width),
-                th.nn.ReLU( inplace=True),
+                th.nn.ReLU(inplace=True),
                 # 8x8
 
                 th.nn.Conv2d(2*width, 2*width, 5, stride=2, padding=2),
                 th.nn.InstanceNorm2d(2*width),
-                th.nn.ReLU( inplace=True),
+                th.nn.ReLU(inplace=True),
                 # 4x4
 
                 modules.Flatten(),
@@ -93,6 +93,7 @@ class SketchVAE(th.nn.Module):
 
     class ImageDecoder(th.nn.Module):
         """"""
+
         def __init__(self, zdim=128, image_size=64, width=64):
             super(SketchVAE.ImageDecoder, self).__init__()
             self.zdim = zdim
@@ -103,42 +104,42 @@ class SketchVAE(th.nn.Module):
             self.net = th.nn.Sequential(
                 th.nn.ConvTranspose2d(2*width, 2*width, 4, padding=1, stride=2),
                 th.nn.InstanceNorm2d(2*width),
-                th.nn.ReLU( inplace=True),
+                th.nn.ReLU(inplace=True),
                 # 8x8
 
                 th.nn.ConvTranspose2d(2*width, 2*width, 4, padding=1, stride=2),
                 th.nn.InstanceNorm2d(2*width),
-                th.nn.ReLU( inplace=True),
+                th.nn.ReLU(inplace=True),
                 # 16x16
 
                 th.nn.ConvTranspose2d(2*width, 2*width, 4, padding=1, stride=2),
                 th.nn.InstanceNorm2d(2*width),
-                th.nn.ReLU( inplace=True),
+                th.nn.ReLU(inplace=True),
                 # 16x16
 
                 th.nn.Conv2d(2*width, 2*width, 5, padding=2, stride=1),
                 th.nn.InstanceNorm2d(2*width),
-                th.nn.ReLU( inplace=True),
+                th.nn.ReLU(inplace=True),
                 # 16x16
 
                 th.nn.ConvTranspose2d(2*width, 2*width, 4, padding=1, stride=2),
                 th.nn.InstanceNorm2d(2*width),
-                th.nn.ReLU( inplace=True),
+                th.nn.ReLU(inplace=True),
                 # 32x32
 
                 th.nn.Conv2d(2*width, width, 5, padding=2, stride=1),
                 th.nn.InstanceNorm2d(width),
-                th.nn.ReLU( inplace=True),
+                th.nn.ReLU(inplace=True),
                 # 32x32
 
                 th.nn.ConvTranspose2d(width, width, 5, padding=2, stride=1),
                 th.nn.InstanceNorm2d(width),
-                th.nn.ReLU( inplace=True),
+                th.nn.ReLU(inplace=True),
                 # 64x64
 
                 th.nn.Conv2d(width, width, 5, padding=2, stride=1),
                 th.nn.InstanceNorm2d(width),
-                th.nn.ReLU( inplace=True),
+                th.nn.ReLU(inplace=True),
                 # 64x64
 
                 th.nn.Conv2d(width, 4, 5, padding=2, stride=1),
@@ -155,6 +156,7 @@ class SketchVAE(th.nn.Module):
         The decoder outputs a sequence where each time step models (dx, dy,
         opacity).
         """
+
         def __init__(self, sequence_length, hidden_size=512, dropout=0.9,
                      zdim=128, num_layers=3):
             super(SketchVAE.SketchDecoder, self).__init__()
@@ -181,7 +183,7 @@ class SketchVAE(th.nn.Module):
             )
 
         def forward(self, z, hidden_and_cell=None):
-            # Every step in the sequence takes the latent vector as input so we 
+            # Every step in the sequence takes the latent vector as input so we
             # replicate it here
             bs = z.shape[0]
             steps = self.sequence_length - 1  # no need to predict the start of sequence
@@ -240,6 +242,7 @@ class SketchVAE(th.nn.Module):
 
 class SketchVAECallback(ttools.callbacks.ImageDisplayCallback):
     """Simple callback that visualize images."""
+
     def visualized_image(self, batch, step_data, is_val=False):
         if is_val:
             return None
@@ -252,7 +255,7 @@ class SketchVAECallback(ttools.callbacks.ImageDisplayCallback):
 
         rendering = th.cat([gt, vae_im, sketch_im], 2)
         rendering = th.clamp(rendering, 0, 1)
-        alpha =  rendering[:, 3:4]
+        alpha = rendering[:, 3:4]
         rendering = rendering[:, :3] * alpha
 
         return rendering
@@ -262,8 +265,6 @@ class SketchVAECallback(ttools.callbacks.ImageDisplayCallback):
             return ""
         else:
             return "top: truth, middle: vae sample, output: rnn-output"
-
-
 
 
 class Interface(ttools.ModelInterface):

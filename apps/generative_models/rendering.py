@@ -1,14 +1,13 @@
-import os
-import torch as th
-import torch.multiprocessing as mp
-import threading as mt
-import numpy as np
+# import os
 import random
-
-import ttools
-
-import pydiffvg
+# import threading as mt
 import time
+
+# import numpy as np
+import pydiffvg
+import torch as th
+# import torch.multiprocessing as mp
+# import ttools
 
 
 def render(canvas_width, canvas_height, shapes, shape_groups, samples=2,
@@ -31,7 +30,6 @@ def opacityStroke2diffvg(strokes, canvas_size=128, debug=False, relative=True,
     dev = strokes.device
     if force_cpu:
         strokes = strokes.to("cpu")
-
 
     # pydiffvg.set_use_gpu(False)
     # if strokes.is_cuda:
@@ -112,7 +110,7 @@ def stroke2diffvg(strokes, canvas_size=128):
     for stroke_idx, stroke in enumerate(strokes):
         end_of_stroke = stroke[:, 4] == 1
         last = end_of_stroke.cpu().numpy().argmax()
-        stroke = stroke[:last+1, :]
+        stroke = stroke[:last + 1, :]
         # stroke = stroke[~end_of_stroke]
         # TODO: stop at the first end of stroke
         # import ipdb; ipdb.set_trace()

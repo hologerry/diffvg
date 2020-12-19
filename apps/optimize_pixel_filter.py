@@ -1,31 +1,33 @@
+from subprocess import call
+
 import diffvg
+# import numpy as np
 import pydiffvg
+# import skimage
 import torch
-import skimage
-import numpy as np
 
 # Use GPU if available
 pydiffvg.set_use_gpu(torch.cuda.is_available())
 
 canvas_width = 256
 canvas_height = 256
-circle = pydiffvg.Circle(radius = torch.tensor(40.0),
-                         center = torch.tensor([128.0, 128.0]))
+circle = pydiffvg.Circle(radius=torch.tensor(40.0),
+                         center=torch.tensor([128.0, 128.0]))
 shapes = [circle]
-circle_group = pydiffvg.ShapeGroup(shape_ids = torch.tensor([0]),
-    fill_color = torch.tensor([0.3, 0.6, 0.3, 1.0]))
+circle_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([0]),
+                                   fill_color=torch.tensor([0.3, 0.6, 0.3, 1.0]))
 shape_groups = [circle_group]
-scene_args = pydiffvg.RenderFunction.serialize_scene(\
+scene_args = pydiffvg.RenderFunction.serialize_scene(
     canvas_width=canvas_width,
     canvas_height=canvas_height,
     shapes=shapes,
     shape_groups=shape_groups,
-    filter=pydiffvg.PixelFilter(type = diffvg.FilterType.hann,
-                                radius = torch.tensor(8.0)))
+    filter=pydiffvg.PixelFilter(type=diffvg.FilterType.hann,
+                                radius=torch.tensor(8.0)))
 
 render = pydiffvg.RenderFunction.apply
-img = render(256, # width
-             256, # height
+img = render(256,  # width
+             256,  # height
              2,   # num_samples_x
              2,   # num_samples_y
              0,   # seed
@@ -36,16 +38,16 @@ pydiffvg.imwrite(img.cpu(), 'results/optimize_pixel_filter/target.png', gamma=2.
 target = img.clone()
 
 # Change the pixel filter radius
-radius = torch.tensor(1.0, requires_grad = True)
-scene_args = pydiffvg.RenderFunction.serialize_scene(\
+radius = torch.tensor(1.0, requires_grad=True)
+scene_args = pydiffvg.RenderFunction.serialize_scene(
     canvas_width=canvas_width,
     canvas_height=canvas_height,
     shapes=shapes,
     shape_groups=shape_groups,
-    filter=pydiffvg.PixelFilter(type = diffvg.FilterType.hann,
-                                radius = radius))
-img = render(256, # width
-             256, # height
+    filter=pydiffvg.PixelFilter(type=diffvg.FilterType.hann,
+                                radius=radius))
+img = render(256,  # width
+             256,  # height
              2,   # num_samples_x
              2,   # num_samples_y
              1,   # seed
@@ -60,13 +62,13 @@ for t in range(100):
     print('iteration:', t)
     optimizer.zero_grad()
     # Forward pass: render the image.
-    scene_args = pydiffvg.RenderFunction.serialize_scene(\
+    scene_args = pydiffvg.RenderFunction.serialize_scene(
         canvas_width=canvas_width,
         canvas_height=canvas_height,
         shapes=shapes,
         shape_groups=shape_groups,
-        filter=pydiffvg.PixelFilter(type = diffvg.FilterType.hann,
-                                    radius = radius))
+        filter=pydiffvg.PixelFilter(type=diffvg.FilterType.hann,
+                                    radius=radius))
     img = render(256,   # width
                  256,   # height
                  2,     # num_samples_x
@@ -91,13 +93,13 @@ for t in range(100):
     print('radius:', radius)
 
 # Render the final result.
-scene_args = pydiffvg.RenderFunction.serialize_scene(\
+scene_args = pydiffvg.RenderFunction.serialize_scene(
     canvas_width=canvas_width,
     canvas_height=canvas_height,
     shapes=shapes,
     shape_groups=shape_groups,
-    filter=pydiffvg.PixelFilter(type = diffvg.FilterType.hann,
-                                radius = radius))
+    filter=pydiffvg.PixelFilter(type=diffvg.FilterType.hann,
+                                radius=radius))
 img = render(256,   # width
              256,   # height
              2,     # num_samples_x
@@ -109,7 +111,6 @@ img = render(256,   # width
 pydiffvg.imwrite(img.cpu(), 'results/optimize_pixel_filter/final.png')
 
 # Convert the intermediate renderings to a video.
-from subprocess import call
 call(["ffmpeg", "-framerate", "24", "-i",
-    "results/optimize_pixel_filter/iter_%d.png", "-vb", "20M",
-    "results/optimize_pixel_filter/out.mp4"])
+      "results/optimize_pixel_filter/iter_%d.png", "-vb", "20M",
+      "results/optimize_pixel_filter/out.mp4"])

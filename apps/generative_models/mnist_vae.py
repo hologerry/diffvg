@@ -19,17 +19,15 @@ import argparse
 import os
 
 import numpy as np
+import pydiffvg
 import torch as th
-from torch.utils.data import DataLoader
 import torchvision.datasets as dset
 import torchvision.transforms as transforms
-
 import ttools
 import ttools.interfaces
+from torch.utils.data import DataLoader
 
-from modules import Flatten
-
-import pydiffvg
+from .modules import Flatten
 
 LOG = ttools.get_logger(__name__)
 
@@ -447,6 +445,7 @@ def train(args):
                  f"aborting: {meta} and {model_params}")
 
     # Hook interface
+    interface = None
     if args.generator in ["vae", "ae"]:
         variational = args.generator == "vae"
         if variational:
@@ -505,7 +504,7 @@ def generate_samples(args):
     dataset = Dataset(args.data_dir, imsize)
     dataloader = DataLoader(dataset, batch_size=bs,
                             num_workers=1, shuffle=True)
-
+    ref, label = None, None
     for batch in dataloader:
         ref, label = batch
         break
@@ -614,7 +613,7 @@ def interpolate(args):
                 _label = None
 
             # interp weights
-            alpha = th.linspace(0, 1, nframes).view(nframes,  1)
+            alpha = th.linspace(0, 1, nframes).view(nframes, 1)
             batch = alpha*_z + (1.0 - alpha)*_z0
             images, aux = model.decode(batch, label=_label)
             images += 1.0

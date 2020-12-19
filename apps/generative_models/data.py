@@ -1,13 +1,14 @@
 import os
-import time
-import torch as th
+# import time
+
+# import imageio
 import numpy as np
+import torch as th
 import torchvision.datasets as dset
 import torchvision.transforms as transforms
-import imageio
-
 import ttools
-import rendering
+
+from . import rendering
 
 BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir)
 DATA = os.path.join(BASE_DIR, "data")
@@ -22,6 +23,7 @@ class QuickDrawImageDataset(th.utils.data.Dataset):
     Args:
         spatial_limit(int): maximum spatial extent in pixels.
     """
+
     def __init__(self, imsize, train=True):
         super(QuickDrawImageDataset, self).__init__()
         file = os.path.join(DATA, "cat.npy")
@@ -29,8 +31,7 @@ class QuickDrawImageDataset(th.utils.data.Dataset):
         self.imsize = imsize
 
         if not os.path.exists(file):
-            msg = "Dataset file %s does not exist, please download"
-            " it from %s" % (file, QuickDrawImageDataset.BASE_DATA_URL)
+            msg = "Dataset file %s does not exist, please download it from %s" % (file, QuickDrawImageDataset.BASE_DATA_URL)
             LOG.error(msg)
             raise RuntimeError(msg)
 
@@ -60,6 +61,7 @@ class QuickDrawDataset(th.utils.data.Dataset):
     Args:
         spatial_limit(int): maximum spatial extent in pixels.
     """
+
     def __init__(self, dataset, mode="train",
                  max_seq_length=250,
                  spatial_limit=1000):
@@ -75,8 +77,7 @@ class QuickDrawDataset(th.utils.data.Dataset):
                               " 'valid'.")
 
         if not os.path.exists(file):
-            msg = "Dataset file %s does not exist, please download"
-            " it from %s" % (file, remote)
+            msg = "Dataset file %s does not exist, please download it from %s" % (file, remote)
             LOG.error(msg)
             raise RuntimeError(msg)
 
@@ -175,9 +176,10 @@ class QuickDrawDataset(th.utils.data.Dataset):
 
 
 class FixedLengthQuickDrawDataset(QuickDrawDataset):
-    """A variant of the QuickDraw dataset where the strokes are represented as 
+    """A variant of the QuickDraw dataset where the strokes are represented as
     a fixed-length sequence of triplets (dx, dy, opacity), where opacity = 0, 1.
     """
+
     def __init__(self, *args, canvas_size=64, **kwargs):
         super(FixedLengthQuickDrawDataset, self).__init__(*args, **kwargs)
         self.canvas_size = canvas_size

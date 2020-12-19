@@ -1,7 +1,8 @@
+import matplotlib.pyplot as plt
 import pydiffvg
 import torch
-import skimage
-import numpy as np
+# import skimage
+# import numpy as np
 
 # Use GPU if available
 pydiffvg.set_use_gpu(torch.cuda.is_available())
@@ -17,42 +18,42 @@ num_control_points = torch.tensor([2])
 #                        [210.0,  98.0], # base
 #                        [220.0,  70.0], # control point
 #                        [130.0,  55.0]]) # control point
-points = torch.tensor([[ 20.0, 128.0], # base
-                       [ 50.0, 128.0], # control point
-                       [170.0, 128.0], # control point
-                       [200.0, 128.0]]) # base
-path = pydiffvg.Path(num_control_points = num_control_points,
-                     points = points,
-                     is_closed = False,
-                     stroke_width = torch.tensor(10.0))
+points = torch.tensor([[20.0, 128.0],  # base
+                       [50.0, 128.0],  # control point
+                       [170.0, 128.0],  # control point
+                       [200.0, 128.0]])  # base
+path = pydiffvg.Path(num_control_points=num_control_points,
+                     points=points,
+                     is_closed=False,
+                     stroke_width=torch.tensor(10.0))
 shapes = [path]
-path_group = pydiffvg.ShapeGroup(shape_ids = torch.tensor([0]),
-                                 fill_color = None,
-                                 stroke_color = torch.tensor([0.3, 0.6, 0.3, 1.0]))
+path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([0]),
+                                 fill_color=None,
+                                 stroke_color=torch.tensor([0.3, 0.6, 0.3, 1.0]))
 shape_groups = [path_group]
-scene_args = pydiffvg.RenderFunction.serialize_scene(\
+scene_args = pydiffvg.RenderFunction.serialize_scene(
     canvas_width, canvas_height, shapes, shape_groups,
-    output_type = pydiffvg.OutputType.sdf)
+    output_type=pydiffvg.OutputType.sdf)
 
 render = pydiffvg.RenderFunction.apply
-img = render(256, # width
-             256, # height
+img = render(256,  # width
+             256,  # height
              1,   # num_samples_x
              1,   # num_samples_y
              0,   # seed
-             None, # background_image
+             None,  # background_image
              *scene_args)
 
 path.points[:, 1] += 1e-3
-scene_args = pydiffvg.RenderFunction.serialize_scene(\
+scene_args = pydiffvg.RenderFunction.serialize_scene(
     canvas_width, canvas_height, shapes, shape_groups,
-    output_type = pydiffvg.OutputType.sdf)
-img2 = render(256, # width
-              256, # height
+    output_type=pydiffvg.OutputType.sdf)
+img2 = render(256,  # width
+              256,  # height
               1,   # num_samples_x
               1,   # num_samples_y
               0,   # seed
-              None, # background_image
+              None,  # background_image
               *scene_args)
 
 # diff = img2 - img
@@ -66,16 +67,15 @@ img2 = render(256, # width
 # target = img.clone()
 
 render_grad = pydiffvg.RenderFunction.render_grad
-img = render_grad(torch.ones(256, 256, 1), # grad_img
-                  256, # width
-                  256, # height
+img = render_grad(torch.ones(256, 256, 1),  # grad_img
+                  256,  # width
+                  256,  # height
                   1,   # num_samples_x
                   1,   # num_samples_y
                   0,   # seed
-                  None, # background_image
+                  None,  # background_image
                   *scene_args)
 img = img[:, :, 0]
-import matplotlib.pyplot as plt
 plt.imshow(img)
 plt.show()
 
@@ -90,7 +90,7 @@ plt.show()
 # #                          [220.0/256.0, 100.0/256.0], # base
 # #                          [210.0/256.0,  80.0/256.0], # control point
 # #                          [140.0/256.0,  60.0/256.0]], # control point
-# #                         requires_grad = True) 
+# #                         requires_grad = True)
 # points_n = torch.tensor([[118.4274/256.0,  32.0159/256.0],
 #                          [174.9657/256.0,  28.1877/256.0],
 #                          [ 87.6629/256.0, 175.1049/256.0],

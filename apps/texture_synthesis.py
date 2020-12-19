@@ -1,29 +1,34 @@
-import os, sys
-import pydiffvg
 import argparse
-import torch
-# import torch as th
-import scipy.ndimage.filters as filters
+# import os
+import random
+import sys
+
 # import numba
 import numpy as np
-from skimage import io
-sys.path.append('./textureSyn')
-from patchBasedTextureSynthesis import *
+import pydiffvg
+# import torch as th
+# import scipy.ndimage.filters as filters
+import torch
+# import ttools.modules
 from make_gif import make_gif
-import random
-import ttools.modules
+from patchBasedTextureSynthesis import patchBasedTextureSynthesis
+# from skimage import io
+from svgpathtools import Path, is_path_segment
+# from svgpathtools import svg2paths2
 
-from svgpathtools import svg2paths2, Path, is_path_segment
+sys.path.append('./textureSyn')
+
 """
 python texture_synthesis.py textureSyn/traced_1.png  --svg-path textureSyn/traced_1.svg --case 1
 """
 
+
 def texture_syn(img_path):
-    ## get the width and height first
+    # get the width and height first
     # input_img = io.imread(img_path)  # returns an MxNx3 array
     # output_size = [input_img.shape[1], input_img.shape[0]]
     # output_path = "textureSyn/1/"
-    output_path = "results/texture_synthesis/%d"%(args.case)
+    output_path = "results/texture_synthesis/%d" % (args.case)
     patch_size = 40  # size of the patch (without the overlap)
     overlap_size = 10  # the width of the overlap region
     output_size = [300, 300]
@@ -35,16 +40,17 @@ def texture_syn(img_path):
 
 def render(canvas_width, canvas_height, shapes, shape_groups, samples=2):
     _render = pydiffvg.RenderFunction.apply
-    scene_args = pydiffvg.RenderFunction.serialize_scene(\
+    scene_args = pydiffvg.RenderFunction.serialize_scene(
         canvas_width, canvas_height, shapes, shape_groups)
-    img = _render(canvas_width, # width
-                 canvas_height, # height
-                 samples,   # num_samples_x
-                 samples,   # num_samples_y
-                 0,   # seed
-                 None,
-                 *scene_args)
+    img = _render(canvas_width,  # width
+                  canvas_height,  # height
+                  samples,   # num_samples_x
+                  samples,   # num_samples_y
+                  0,   # seed
+                  None,
+                  *scene_args)
     return img
+
 
 def big_bounding_box(paths_n_stuff):
     """Finds a BB containing a collection of paths, Bezier path segments, and
@@ -73,28 +79,26 @@ def big_bounding_box(paths_n_stuff):
 
 
 def main(args):
-    ## set device -> use cpu now since I haven't solved the nvcc issue
+    # set device -> use cpu now since I haven't solved the nvcc issue
     pydiffvg.set_use_gpu(False)
     # pydiffvg.set_device(torch.device('cuda:1'))
-    ## use L2 for now
+    # use L2 for now
     # perception_loss = ttools.modules.LPIPS().to(pydiffvg.get_device())
 
-    ## generate a texture synthesized
+    # generate a texture synthesized
     target_img = texture_syn(args.target)
     tar_h, tar_w = target_img.shape[1], target_img.shape[0]
     canvas_width, canvas_height, shapes, shape_groups = \
         pydiffvg.svg_to_scene(args.svg_path)
 
-
-    ## svgpathtools for checking the bounding box
+    # svgpathtools for checking the bounding box
     # paths, _, _ = svg2paths2(args.svg_path)
     # print(len(paths))
     # xmin, xmax, ymin, ymax = big_bounding_box(paths)
     # print(xmin, xmax, ymin, ymax)
     # input("check")
 
-
-    print('tar h : %d tar w : %d'%(tar_h, tar_w))
+    print('tar h : %d tar w : %d' % (tar_h, tar_w))
     print('canvas h : %d canvas w : %d' % (canvas_height, canvas_width))
     scale_ratio = tar_h / canvas_height
     print("scale ratio : ", scale_ratio)
@@ -104,7 +108,7 @@ def main(args):
         path.points[..., 1] = path.points[..., 1] * scale_ratio
 
     init_img = render(tar_w, tar_h, shapes, shape_groups)
-    pydiffvg.imwrite(init_img.cpu(), 'results/texture_synthesis/%d/init.png'%(args.case), gamma=2.2)
+    pydiffvg.imwrite(init_img.cpu(), 'results/texture_synthesis/%d/init.png' % (args.case), gamma=2.2)
     # input("check")
     random.seed(1234)
     torch.manual_seed(1234)
@@ -125,7 +129,7 @@ def main(args):
     target = target.pow(2.2)
     target = target.to(pydiffvg.get_device())
     target = target.unsqueeze(0)
-    target = target.permute(0, 3, 1, 2) # NHWC -> NCHW
+    target = target.permute(0, 3, 1, 2)  # NHWC -> NCHW
     canvas_width, canvas_height = target.shape[3], target.shape[2]
     # print('canvas h : %d canvas w : %d' % (canvas_height, canvas_width))
     # input("check")
@@ -135,14 +139,14 @@ def main(args):
         points_optim.zero_grad()
         color_optim.zero_grad()
         cur_img = render(canvas_width, canvas_height, shapes, shape_groups)
-        pydiffvg.imwrite(cur_img.cpu(), 'results/texture_synthesis/%d/iter_%d.png'%(args.case, t), gamma=2.2)
+        pydiffvg.imwrite(cur_img.cpu(), 'results/texture_synthesis/%d/iter_%d.png' % (args.case, t), gamma=2.2)
         cur_img = cur_img[:, :, :3]
         cur_img = cur_img.unsqueeze(0)
-        cur_img = cur_img.permute(0, 3, 1, 2) # NHWC -> NCHW
+        cur_img = cur_img.permute(0, 3, 1, 2)  # NHWC -> NCHW
 
-        ## perceptual loss
+        # perceptual loss
         # loss = perception_loss(cur_img, target)
-        ## l2 loss
+        # l2 loss
         loss = (cur_img - target).pow(2).mean()
         print('render loss:', loss.item())
         loss.backward()
@@ -152,26 +156,27 @@ def main(args):
 
         for group in shape_groups:
             group.fill_color.data.clamp_(0.0, 1.0)
-        ## write svg
+        # write svg
         if t % 10 == 0 or t == args.max_iter - 1:
-            pydiffvg.save_svg('results/texture_synthesis/%d/iter_%d.svg'%(args.case, t),
+            pydiffvg.save_svg('results/texture_synthesis/%d/iter_%d.svg' % (args.case, t),
                               canvas_width, canvas_height, shapes, shape_groups)
 
-    ## render final result
+    # render final result
     final_img = render(tar_h, tar_w, shapes, shape_groups)
-    pydiffvg.imwrite(final_img.cpu(), 'results/texture_synthesis/%d/final.png'%(args.case), gamma=2.2)
-
+    pydiffvg.imwrite(final_img.cpu(), 'results/texture_synthesis/%d/final.png' % (args.case), gamma=2.2)
 
     from subprocess import call
     call(["ffmpeg", "-framerate", "24", "-i",
-        "results/texture_synthesis/%d/iter_%d.png"%(args.case), "-vb", "20M",
-        "results/texture_synthesis/%d/out.mp4"%(args.case)])
-    ## make gif
-    make_gif("results/texture_synthesis/%d"%(args.case), "results/texture_synthesis/%d/out.gif"%(args.case), frame_every_X_steps=1, repeat_ending=3, total_iter=args.max_iter)
+          "results/texture_synthesis/%d/iter_%d.png" % (args.case), "-vb", "20M",
+          "results/texture_synthesis/%d/out.mp4" % (args.case)])
+    # make gif
+    make_gif("results/texture_synthesis/%d" % (args.case), "results/texture_synthesis/%d/out.gif" %
+             (args.case), frame_every_X_steps=1, repeat_ending=3, total_iter=args.max_iter)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    ## target image path
+    # target image path
     parser.add_argument("target", help="target image path")
     parser.add_argument("--svg-path", type=str, help="the corresponding svg file path")
     parser.add_argument("--max-iter", type=int, default=500, help="the max optimization iterations")

@@ -1,25 +1,26 @@
+from subprocess import call
 import pydiffvg
 import torch
-import skimage
-import numpy as np
+# import skimage
+# import numpy as np
 
 # Use GPU if available
 pydiffvg.set_use_gpu(torch.cuda.is_available())
 
 canvas_width = 256
 canvas_height = 256
-circle = pydiffvg.Circle(radius = torch.tensor(40.0),
-                         center = torch.tensor([128.0, 128.0]))
+circle = pydiffvg.Circle(radius=torch.tensor(40.0),
+                         center=torch.tensor([128.0, 128.0]))
 shapes = [circle]
-circle_group = pydiffvg.ShapeGroup(shape_ids = torch.tensor([0]),
-    fill_color = torch.tensor([0.3, 0.6, 0.3, 1.0]))
+circle_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([0]),
+                                   fill_color=torch.tensor([0.3, 0.6, 0.3, 1.0]))
 shape_groups = [circle_group]
-scene_args = pydiffvg.RenderFunction.serialize_scene(\
+scene_args = pydiffvg.RenderFunction.serialize_scene(
     canvas_width, canvas_height, shapes, shape_groups)
 
 render = pydiffvg.RenderFunction.apply
-img = render(256, # width
-             256, # height
+img = render(256,  # width
+             256,  # height
              2,   # num_samples_x
              2,   # num_samples_y
              0,   # seed
@@ -37,10 +38,10 @@ color = torch.tensor([0.3, 0.2, 0.8, 1.0], requires_grad=True)
 circle.radius = radius_n * 256
 circle.center = center_n * 256
 circle_group.fill_color = color
-scene_args = pydiffvg.RenderFunction.serialize_scene(\
+scene_args = pydiffvg.RenderFunction.serialize_scene(
     canvas_width, canvas_height, shapes, shape_groups)
-img = render(256, # width
-             256, # height
+img = render(256,  # width
+             256,  # height
              2,   # num_samples_x
              2,   # num_samples_y
              1,   # seed
@@ -58,7 +59,7 @@ for t in range(100):
     circle.radius = radius_n * 256
     circle.center = center_n * 256
     circle_group.fill_color = color
-    scene_args = pydiffvg.RenderFunction.serialize_scene(\
+    scene_args = pydiffvg.RenderFunction.serialize_scene(
         canvas_width, canvas_height, shapes, shape_groups)
     img = render(256,   # width
                  256,   # height
@@ -88,7 +89,7 @@ for t in range(100):
     print('color:', circle_group.fill_color)
 
 # Render the final result.
-scene_args = pydiffvg.RenderFunction.serialize_scene(\
+scene_args = pydiffvg.RenderFunction.serialize_scene(
     canvas_width, canvas_height, shapes, shape_groups)
 img = render(256,   # width
              256,   # height
@@ -101,7 +102,6 @@ img = render(256,   # width
 pydiffvg.imwrite(img.cpu(), 'results/single_circle/final.png')
 
 # Convert the intermediate renderings to a video.
-from subprocess import call
 call(["ffmpeg", "-framerate", "24", "-i",
-    "results/single_circle/iter_%d.png", "-vb", "20M",
-    "results/single_circle/out.mp4"])
+      "results/single_circle/iter_%d.png", "-vb", "20M",
+      "results/single_circle/out.mp4"])

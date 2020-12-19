@@ -1,7 +1,8 @@
-import torch
+# import torch
 import pydiffvg
 import xml.etree.ElementTree as etree
 from xml.dom import minidom
+
 
 def prettify(elem):
     """Return a pretty-printed XML string for the Element.
@@ -10,7 +11,8 @@ def prettify(elem):
     reparsed = minidom.parseString(rough_string)
     return reparsed.toprettyxml(indent="  ")
 
-def save_svg(filename, width, height, shapes, shape_groups, use_gamma = False):
+
+def save_svg(filename, width, height, shapes, shape_groups, use_gamma=False):
     root = etree.Element('svg')
     root.set('version', '1.1')
     root.set('xmlns', 'http://www.w3.org/2000/svg')
@@ -57,12 +59,12 @@ def save_svg(filename, width, height, shapes, shape_groups, use_gamma = False):
                 color.set('x2', str(lg.end[0].item()))
                 color.set('y2', str(lg.end[1].item()))
                 offsets = lg.offsets.data.cpu().numpy()
-                stop_colors = lg.stop_colors.data.cpu().numpy()
+                # stop_colors = lg.stop_colors.data.cpu().numpy()
                 for j in range(offsets.shape[0]):
                     stop = etree.SubElement(color, 'stop')
                     stop.set('offset', offsets[j])
                     c = lg.stop_colors[j, :]
-                    stop.set('stop-color', 'rgb({}, {}, {})'.format(\
+                    stop.set('stop-color', 'rgb({}, {}, {})'.format(
                         int(255 * c[0]), int(255 * c[1]), int(255 * c[2])))
                     stop.set('stop-opacity', '{}'.format(c[3]))
 
@@ -85,7 +87,7 @@ def save_svg(filename, width, height, shapes, shape_groups, use_gamma = False):
             for j in range(0, shape.points.shape[0]):
                 path_str += '{} {}'.format(points[j, 0], points[j, 1])
                 if j != shape.points.shape[0] - 1:
-                    path_str +=  ' '
+                    path_str += ' '
             shape_node.set('points', path_str)
         elif isinstance(shape, pydiffvg.Path):
             shape_node = etree.SubElement(g, 'path')
@@ -98,21 +100,21 @@ def save_svg(filename, width, height, shapes, shape_groups, use_gamma = False):
             for j in range(0, num_segments):
                 if num_control_points[j] == 0:
                     p = point_id % num_points
-                    path_str += ' L {} {}'.format(\
-                            points[p, 0], points[p, 1])
+                    path_str += ' L {} {}'.format(
+                        points[p, 0], points[p, 1])
                     point_id += 1
                 elif num_control_points[j] == 1:
                     p1 = (point_id + 1) % num_points
-                    path_str += ' Q {} {} {} {}'.format(\
-                            points[point_id, 0], points[point_id, 1],
-                            points[p1, 0], points[p1, 1])
+                    path_str += ' Q {} {} {} {}'.format(
+                        points[point_id, 0], points[point_id, 1],
+                        points[p1, 0], points[p1, 1])
                     point_id += 2
                 elif num_control_points[j] == 2:
                     p2 = (point_id + 2) % num_points
-                    path_str += ' C {} {} {} {} {} {}'.format(\
-                            points[point_id, 0], points[point_id, 1],
-                            points[point_id + 1, 0], points[point_id + 1, 1],
-                            points[p2, 0], points[p2, 1])
+                    path_str += ' C {} {} {} {} {} {}'.format(
+                        points[point_id, 0], points[point_id, 1],
+                        points[point_id + 1, 0], points[point_id + 1, 1],
+                        points[p2, 0], points[p2, 1])
                     point_id += 3
             shape_node.set('d', path_str)
         elif isinstance(shape, pydiffvg.Rect):
@@ -130,7 +132,7 @@ def save_svg(filename, width, height, shapes, shape_groups, use_gamma = False):
                 shape_node.set('fill', 'url(#shape_{}_fill)'.format(i))
             else:
                 c = shape_group.fill_color.data.cpu().numpy()
-                shape_node.set('fill', 'rgb({}, {}, {})'.format(\
+                shape_node.set('fill', 'rgb({}, {}, {})'.format(
                     int(255 * c[0]), int(255 * c[1]), int(255 * c[2])))
                 shape_node.set('opacity', str(c[3]))
         else:
@@ -140,7 +142,7 @@ def save_svg(filename, width, height, shapes, shape_groups, use_gamma = False):
                 shape_node.set('stroke', 'url(#shape_{}_stroke)'.format(i))
             else:
                 c = shape_group.stroke_color.data.cpu().numpy()
-                shape_node.set('stroke', 'rgb({}, {}, {})'.format(\
+                shape_node.set('stroke', 'rgb({}, {}, {})'.format(
                     int(255 * c[0]), int(255 * c[1]), int(255 * c[2])))
                 shape_node.set('stroke-opacity', str(c[3]))
             shape_node.set('stroke-linecap', 'round')

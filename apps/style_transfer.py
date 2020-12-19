@@ -9,15 +9,16 @@ import copy
 import pydiffvg
 import argparse
 
+
 def main(args):
     pydiffvg.set_use_gpu(torch.cuda.is_available())
 
     canvas_width, canvas_height, shapes, shape_groups = pydiffvg.svg_to_scene(args.content_file)
-    scene_args = pydiffvg.RenderFunction.serialize_scene(\
+    scene_args = pydiffvg.RenderFunction.serialize_scene(
         canvas_width, canvas_height, shapes, shape_groups)
     render = pydiffvg.RenderFunction.apply
-    img = render(canvas_width, # width
-                 canvas_height, # height
+    img = render(canvas_width,  # width
+                 canvas_height,  # height
                  2,   # num_samples_x
                  2,   # num_samples_y
                  0,   # seed
@@ -27,7 +28,7 @@ def main(args):
     pydiffvg.imwrite(img.cpu(), 'results/style_transfer/init.png', gamma=1.0)
     # HWC -> NCHW
     img = img.unsqueeze(0)
-    img = img.permute(0, 3, 1, 2) # NHWC -> NCHW
+    img = img.permute(0, 3, 1, 2)  # NHWC -> NCHW
 
     loader = transforms.Compose([
         transforms.ToTensor()])  # transform it into a torch tensor
@@ -41,13 +42,13 @@ def main(args):
     style_img = image_loader(args.style_img)
     # alpha blend content with a gray background
     content_img = img[:, :3, :, :] * img[:, 3, :, :] + \
-                  0.5 * torch.ones([1, 3, img.shape[2], img.shape[3]]) * \
-                  (1 - img[:, 3, :, :])
+        0.5 * torch.ones([1, 3, img.shape[2], img.shape[3]]) * \
+        (1 - img[:, 3, :, :])
 
     assert style_img.size() == content_img.size(), \
         "we need to import style and content images of the same size"
 
-    unloader = transforms.ToPILImage()  # reconvert into PIL image
+    # unloader = transforms.ToPILImage()  # reconvert into PIL image
 
     class ContentLoss(nn.Module):
         def __init__(self, target,):
@@ -180,7 +181,7 @@ def main(args):
         """Run the style transfer."""
         print('Building the style transfer model..')
         model, style_losses, content_losses = get_style_model_and_losses(cnn,
-            normalization_mean, normalization_std, style_img, content_img)
+                                                                         normalization_mean, normalization_std, style_img, content_img)
         point_params = []
         color_params = []
         stroke_width_params = []
@@ -212,11 +213,11 @@ def main(args):
             color_optimizer.zero_grad()
             stroke_width_optimizers.zero_grad()
 
-            scene_args = pydiffvg.RenderFunction.serialize_scene(\
+            scene_args = pydiffvg.RenderFunction.serialize_scene(
                 canvas_width, canvas_height, shapes, shape_groups)
             render = pydiffvg.RenderFunction.apply
-            img = render(canvas_width, # width
-                         canvas_height, # height
+            img = render(canvas_width,  # width
+                         canvas_height,  # height
                          2,   # num_samples_x
                          2,   # num_samples_y
                          0,   # seed
@@ -224,8 +225,8 @@ def main(args):
                          *scene_args)
             # alpha blend img with a gray background
             img = img[:, :, :3] * img[:, :, 3:4] + \
-                  0.5 * torch.ones([img.shape[0], img.shape[1], 3]) * \
-                  (1 - img[:, :, 3:4])
+                0.5 * torch.ones([img.shape[0], img.shape[1], 3]) * \
+                (1 - img[:, :, 3:4])
 
             pydiffvg.imwrite(img.cpu(),
                              'results/style_transfer/step_{}.png'.format(run[0]),
@@ -266,15 +267,15 @@ def main(args):
 
         return shapes, shape_groups
 
-    shapes, shape_groups = run_style_transfer(\
+    shapes, shape_groups = run_style_transfer(
         cnn, cnn_normalization_mean, cnn_normalization_std,
         content_img, style_img,
         canvas_width, canvas_height, shapes, shape_groups)
 
     scene_args = pydiffvg.RenderFunction.serialize_scene(shapes, shape_groups)
     render = pydiffvg.RenderFunction.apply
-    img = render(canvas_width, # width
-                 canvas_height, # height
+    img = render(canvas_width,  # width
+                 canvas_height,  # height
                  2,   # num_samples_x
                  2,   # num_samples_y
                  0,   # seed
@@ -282,6 +283,7 @@ def main(args):
                  *scene_args)
     # Transform to gamma space
     pydiffvg.imwrite(img.cpu(), 'results/style_transfer/output.png', gamma=1.0)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

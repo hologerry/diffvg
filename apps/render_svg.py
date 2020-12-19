@@ -9,15 +9,15 @@ import torch as th
 
 def render(canvas_width, canvas_height, shapes, shape_groups):
     _render = pydiffvg.RenderFunction.apply
-    scene_args = pydiffvg.RenderFunction.serialize_scene(\
+    scene_args = pydiffvg.RenderFunction.serialize_scene(
         canvas_width, canvas_height, shapes, shape_groups)
-    img = _render(canvas_width, # width
-                 canvas_height, # height
-                 2,   # num_samples_x
-                 2,   # num_samples_y
-                 0,   # seed
-                 None,
-                 *scene_args)
+    img = _render(canvas_width,  # width
+                  canvas_height,  # height
+                  2,   # num_samples_x
+                  2,   # num_samples_y
+                  0,   # seed
+                  None,
+                  *scene_args)
     return img
 
 
@@ -32,6 +32,7 @@ def main(args):
     # Save initial state
     ref = render(canvas_width, canvas_height, shapes, shape_groups)
     pydiffvg.imwrite(ref.cpu(), args.out, gamma=2.2)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

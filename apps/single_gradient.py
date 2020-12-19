@@ -1,33 +1,34 @@
+from subprocess import call
 import pydiffvg
 import torch
-import skimage
-import numpy as np
+# import skimage
+# import numpy as np
 
 # Use GPU if available
 pydiffvg.set_use_gpu(torch.cuda.is_available())
 
 canvas_width, canvas_height = 256, 256
-color = pydiffvg.LinearGradient(\
-    begin = torch.tensor([50.0, 50.0]),
-    end = torch.tensor([200.0, 200.0]),
-    offsets = torch.tensor([0.0, 1.0]),
-    stop_colors = torch.tensor([[0.2, 0.5, 0.7, 1.0],
-                                [0.7, 0.2, 0.5, 1.0]]))
-circle = pydiffvg.Circle(radius = torch.tensor(40.0),
-                         center = torch.tensor([128.0, 128.0]))
+color = pydiffvg.LinearGradient(
+    begin=torch.tensor([50.0, 50.0]),
+    end=torch.tensor([200.0, 200.0]),
+    offsets=torch.tensor([0.0, 1.0]),
+    stop_colors=torch.tensor([[0.2, 0.5, 0.7, 1.0],
+                              [0.7, 0.2, 0.5, 1.0]]))
+circle = pydiffvg.Circle(radius=torch.tensor(40.0),
+                         center=torch.tensor([128.0, 128.0]))
 shapes = [circle]
-circle_group = pydiffvg.ShapeGroup(shape_ids = torch.tensor([0]), fill_color = color)
+circle_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([0]), fill_color=color)
 shape_groups = [circle_group]
-scene_args = pydiffvg.RenderFunction.serialize_scene(\
+scene_args = pydiffvg.RenderFunction.serialize_scene(
     canvas_width, canvas_height, shapes, shape_groups)
 
 render = pydiffvg.RenderFunction.apply
-img = render(256, # width
-             256, # height
+img = render(256,  # width
+             256,  # height
              2,   # num_samples_x
              2,   # num_samples_y
              0,   # seed
-             None, # background_image
+             None,  # background_image
              *scene_args)
 # The output image is in linear RGB space. Do Gamma correction before saving the image.
 pydiffvg.imwrite(img.cpu(), 'results/single_gradient/target.png', gamma=2.2)
@@ -48,14 +49,14 @@ circle.radius = radius_n * 256
 circle.center = center_n * 256
 circle_group.fill_color = color
 shapes = [circle]
-scene_args = pydiffvg.RenderFunction.serialize_scene(\
+scene_args = pydiffvg.RenderFunction.serialize_scene(
     canvas_width, canvas_height, shapes, shape_groups)
-img = render(256, # width
-             256, # height
+img = render(256,  # width
+             256,  # height
              2,   # num_samples_x
              2,   # num_samples_y
              1,   # seed
-             None, # background_image
+             None,  # background_image
              *scene_args)
 pydiffvg.imwrite(img.cpu(), 'results/single_gradient/init.png', gamma=2.2)
 
@@ -72,14 +73,14 @@ for t in range(100):
     circle.radius = radius_n * 256
     circle.center = center_n * 256
     circle_group.fill_color = color
-    scene_args = pydiffvg.RenderFunction.serialize_scene(\
+    scene_args = pydiffvg.RenderFunction.serialize_scene(
         canvas_width, canvas_height, shapes, shape_groups)
     img = render(256,   # width
                  256,   # height
                  2,     # num_samples_x
                  2,     # num_samples_y
                  t+1,   # seed
-                 None, # background_image
+                 None,  # background_image
                  *scene_args)
     # Save the intermediate render.
     pydiffvg.imwrite(img.cpu(), 'results/single_gradient/iter_{}.png'.format(t), gamma=2.2)
@@ -112,20 +113,19 @@ color.stop_colors = stop_colors
 circle.radius = radius_n * 256
 circle.center = center_n * 256
 circle_group.fill_color = color
-scene_args = pydiffvg.RenderFunction.serialize_scene(\
+scene_args = pydiffvg.RenderFunction.serialize_scene(
     canvas_width, canvas_height, shapes, shape_groups)
 img = render(256,   # width
              256,   # height
              2,     # num_samples_x
              2,     # num_samples_y
              52,    # seed
-             None, # background_image
+             None,  # background_image
              *scene_args)
 # Save the images and differences.
 pydiffvg.imwrite(img.cpu(), 'results/single_gradient/final.png')
 
 # Convert the intermediate renderings to a video.
-from subprocess import call
 call(["ffmpeg", "-framerate", "24", "-i",
-    "results/single_gradient/iter_%d.png", "-vb", "20M",
-    "results/single_gradient/out.mp4"])
+      "results/single_gradient/iter_%d.png", "-vb", "20M",
+      "results/single_gradient/out.mp4"])

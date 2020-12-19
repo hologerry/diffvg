@@ -8,15 +8,15 @@ import scipy.ndimage.filters as F
 
 def render(canvas_width, canvas_height, shapes, shape_groups):
     _render = pydiffvg.RenderFunction.apply
-    scene_args = pydiffvg.RenderFunction.serialize_scene(\
+    scene_args = pydiffvg.RenderFunction.serialize_scene(
         canvas_width, canvas_height, shapes, shape_groups)
-    img = _render(canvas_width, # width
-                 canvas_height, # height
-                 2,   # num_samples_x
-                 2,   # num_samples_y
-                 0,   # seed
-                 None,
-                 *scene_args)
+    img = _render(canvas_width,  # width
+                  canvas_height,  # height
+                  2,   # num_samples_x
+                  2,   # num_samples_y
+                  0,   # seed
+                  None,
+                  *scene_args)
     return img
 
 
@@ -68,10 +68,10 @@ def main():
 
         print('alpha:', img[..., 3].mean().item())
         print('render loss:', loss.item())
-    
+
         # Backpropagate the gradients.
         loss.backward()
-    
+
         # Take a gradient descent step.
         points_optim.step()
         width_optim.step()
@@ -86,8 +86,9 @@ def main():
     # Convert the intermediate renderings to a video.
     from subprocess import call
     call(["ffmpeg", "-framerate", "24", "-i",
-        "results/gaussian_blur/iter_%d.png", "-vb", "20M",
-        "results/gaussian_blur/out.mp4"])
+          "results/gaussian_blur/iter_%d.png", "-vb", "20M",
+          "results/gaussian_blur/out.mp4"])
+
 
 if __name__ == "__main__":
     main()

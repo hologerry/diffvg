@@ -6,7 +6,7 @@ import torch as th
 import scipy.ndimage.filters as filters
 import numba
 import numpy as np
-import skimage.io
+# import skimage.io
 
 
 def energy(im):
@@ -19,9 +19,9 @@ def energy(im):
         (np.ndarray) with shape [h, w]: energy map.
     """
     f_dx = np.array([
-        [-1, 0, 1 ],
-        [-2, 0, 2 ],
-        [-1, 0, 1 ],
+        [-1, 0, 1],
+        [-2, 0, 2],
+        [-1, 0, 1],
     ])
     f_dy = f_dx.T
     dx = filters.convolve(im.mean(2), f_dx)
@@ -36,7 +36,7 @@ def min_seam(e):
 
     Args:
         e(np.ndarray) with shape [h, w]: energy map.
-    
+
     Returns:
         min_e(np.ndarray) with shape [h, w]: for all (y,x) min_e[y, x]
             is the cost of the minimal seam from 0 to y (top to bottom).
@@ -50,7 +50,7 @@ def min_seam(e):
     min_e = e.copy()
     argmin_e = np.zeros_like(e, dtype=np.int64)
 
-    h, w =  e.shape
+    h, w = e.shape
 
     # propagate vertically
     for y in range(1, h):
@@ -85,7 +85,7 @@ def carve_seam(im):
 
     e = energy(im)
     min_e, argmin_e = min_seam(e)
-    h, w =  im.shape[:2]
+    h, w = im.shape[:2]
 
     # boolean flags for the pixels to preserve
     to_keep = np.ones((h, w), dtype=np.bool)
@@ -108,21 +108,20 @@ def carve_seam(im):
 
 def render(canvas_width, canvas_height, shapes, shape_groups, samples=2):
     _render = pydiffvg.RenderFunction.apply
-    scene_args = pydiffvg.RenderFunction.serialize_scene(\
+    scene_args = pydiffvg.RenderFunction.serialize_scene(
         canvas_width, canvas_height, shapes, shape_groups)
 
-    img = _render(canvas_width, # width
-                 canvas_height, # height
-                 samples,   # num_samples_x
-                 samples,   # num_samples_y
-                 0,   # seed
-                 None,
-                 *scene_args)
+    img = _render(canvas_width,  # width
+                  canvas_height,  # height
+                  samples,   # num_samples_x
+                  samples,   # num_samples_y
+                  0,   # seed
+                  None,
+                  *scene_args)
     return img
 
 
 def vector_rescale(shapes, scale_x=1.00, scale_y=1.00):
-    new_shapes = []
     for path in shapes:
         path.points[..., 0] *= scale_x
         path.points[..., 1] *= scale_y
@@ -130,7 +129,7 @@ def vector_rescale(shapes, scale_x=1.00, scale_y=1.00):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--svg", default=os.path.join("imgs", "hokusai.svg"))
+    parser.add_argument("--svg", default=os.path.join("imgs", "seamcarving", "hokusai.svg"))
     parser.add_argument("--optim_steps", default=10, type=int)
     parser.add_argument("--lr", default=1e-1, type=int)
     args = parser.parse_args()
@@ -161,15 +160,15 @@ def main():
     # Shrink image by 33 %
     # num_seams_to_remove = 2
     num_seams_to_remove = canvas_width // 3
-    new_canvas_width  = canvas_width - num_seams_to_remove
-    scaling =  new_canvas_width * 1.0 / canvas_width
+    new_canvas_width = canvas_width - num_seams_to_remove
+    scaling = new_canvas_width * 1.0 / canvas_width
 
     # Naive scaling baseline
     print("rendering naive rescaling...")
     vector_rescale(shapes, scale_x=scaling)
     resized = render(new_canvas_width, canvas_height, shapes, shape_groups)
     pydiffvg.imwrite(resized.cpu(), os.path.join(root, 'uniform_scaling.png'), gamma=2.2)
-    pydiffvg.save_svg(os.path.join(svg_root, 'uniform_scaling.svg') , canvas_width,
+    pydiffvg.save_svg(os.path.join(svg_root, 'uniform_scaling.svg'), canvas_width,
                       canvas_height, shapes, shape_groups, use_gamma=False)
     vector_rescale(shapes, scale_x=1.0/scaling)  # bring back original coordinates
     print("saved naiving scaling")
@@ -240,7 +239,7 @@ def main():
                          samples=2)
 
             pydiffvg.imwrite(
-                img.cpu(), 
+                img.cpu(),
                 os.path.join(root, "seam_%03d_iter_%02d.png" % (seam_idx, step)), gamma=2.2)
 
             # NO alpha
@@ -271,13 +270,13 @@ def main():
                      gamma=2.2)
 
     pydiffvg.save_svg(os.path.join(svg_root, 'final.svg'),
-                      canvas_width-seam_idx, canvas_height, shapes,
+                      canvas_width-num_seams_to_remove+1, canvas_height, shapes,
                       shape_groups, use_gamma=False)
 
     # Convert the intermediate renderings to a video.
     from subprocess import call
     call(["ffmpeg", "-framerate", "24", "-i", os.path.join(root, "seam_%03d_iter_00.png"), "-vb", "20M",
-         os.path.join(root, "out.mp4")])
+          os.path.join(root, "out.mp4")])
 
 
 if __name__ == "__main__":

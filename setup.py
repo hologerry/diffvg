@@ -14,11 +14,13 @@ from setuptools.command.install import install
 from distutils.sysconfig import get_config_var
 from distutils.version import LooseVersion
 
+
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir, build_with_cuda):
         Extension.__init__(self, name, sources=[])
         self.sourcedir = os.path.abspath(sourcedir)
         self.build_with_cuda = build_with_cuda
+
 
 class Build(build_ext):
     def run(self):
@@ -88,11 +90,11 @@ if len(packages) == 0:
 if 'DIFFVG_CUDA' in os.environ:
     build_with_cuda = os.environ['DIFFVG_CUDA'] == '1'
 
-setup(name = 'diffvg',
-      version = '0.0.1',
-      install_requires = ["svgpathtools"],
-      description = 'Differentiable Vector Graphics',
-      ext_modules = [CMakeExtension('diffvg', '', build_with_cuda)],
-      cmdclass = dict(build_ext=Build, install=install),
-      packages = packages,
-      zip_safe = False)
+setup(name='diffvg',
+      version='0.0.1',
+      install_requires=["svgpathtools"],
+      description='Differentiable Vector Graphics',
+      ext_modules=[CMakeExtension('diffvg', '', build_with_cuda)],
+      cmdclass=dict(build_ext=Build, install=install),
+      packages=packages,
+      zip_safe=False)

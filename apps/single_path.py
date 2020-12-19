@@ -1,26 +1,28 @@
+from subprocess import call
 import pydiffvg
 import torch
-import skimage
+# import skimage
 
 # Use GPU if available
 pydiffvg.set_use_gpu(torch.cuda.is_available())
 
 canvas_width, canvas_height = 510, 510
 # https://www.flaticon.com/free-icon/black-plane_61212#term=airplane&page=1&position=8
-shapes = pydiffvg.from_svg_path('M510,255c0-20.4-17.85-38.25-38.25-38.25H331.5L204,12.75h-51l63.75,204H76.5l-38.25-51H0L25.5,255L0,344.25h38.25l38.25-51h140.25l-63.75,204h51l127.5-204h140.25C492.15,293.25,510,275.4,510,255z')
-path_group = pydiffvg.ShapeGroup(shape_ids = torch.tensor([0]),
-                                 fill_color = torch.tensor([0.3, 0.6, 0.3, 1.0]))
+shapes = pydiffvg.from_svg_path(
+    'M510,255c0-20.4-17.85-38.25-38.25-38.25H331.5L204,12.75h-51l63.75,204H76.5l-38.25-51H0L25.5,255L0,344.25h38.25l38.25-51h140.25l-63.75,204h51l127.5-204h140.25C492.15,293.25,510,275.4,510,255z')  # noqa
+path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([0]),
+                                 fill_color=torch.tensor([0.3, 0.6, 0.3, 1.0]))
 shape_groups = [path_group]
-scene_args = pydiffvg.RenderFunction.serialize_scene(\
+scene_args = pydiffvg.RenderFunction.serialize_scene(
     canvas_width, canvas_height, shapes, shape_groups)
 
 render = pydiffvg.RenderFunction.apply
-img = render(510, # width
-             510, # height
+img = render(510,  # width
+             510,  # height
              2,   # num_samples_x
              2,   # num_samples_y
              0,   # seed
-             None, # background_image
+             None,  # background_image
              *scene_args)
 # The output image is in linear RGB space. Do Gamma correction before saving the image.
 pydiffvg.imwrite(img.cpu(), 'results/single_path/target.png', gamma=2.2)
@@ -34,14 +36,14 @@ points_n.requires_grad = True
 color = torch.tensor([0.3, 0.2, 0.5, 1.0], requires_grad=True)
 shapes[0].points = points_n * 510
 path_group.fill_color = color
-scene_args = pydiffvg.RenderFunction.serialize_scene(\
+scene_args = pydiffvg.RenderFunction.serialize_scene(
     canvas_width, canvas_height, shapes, shape_groups)
-img = render(510, # width
-             510, # height
+img = render(510,  # width
+             510,  # height
              2,   # num_samples_x
              2,   # num_samples_y
              1,   # seed
-             None, # background_image
+             None,  # background_image
              *scene_args)
 pydiffvg.imwrite(img.cpu(), 'results/single_path/init.png', gamma=2.2)
 
@@ -54,14 +56,14 @@ for t in range(100):
     # Forward pass: render the image.
     shapes[0].points = points_n * 510
     path_group.fill_color = color
-    scene_args = pydiffvg.RenderFunction.serialize_scene(\
+    scene_args = pydiffvg.RenderFunction.serialize_scene(
         canvas_width, canvas_height, shapes, shape_groups)
     img = render(510,   # width
                  510,   # height
                  2,     # num_samples_x
                  2,     # num_samples_y
                  t+1,   # seed
-                 None, # background_image
+                 None,  # background_image
                  *scene_args)
     # Save the intermediate render.
     pydiffvg.imwrite(img.cpu(), 'results/single_path/iter_{:02}.png'.format(t), gamma=2.2)
@@ -84,20 +86,19 @@ for t in range(100):
 # Render the final result.
 shapes[0].points = points_n * 510
 path_group.fill_color = color
-scene_args = pydiffvg.RenderFunction.serialize_scene(\
+scene_args = pydiffvg.RenderFunction.serialize_scene(
     canvas_width, canvas_height, shapes, shape_groups)
 img = render(510,   # width
              510,   # height
              2,     # num_samples_x
              2,     # num_samples_y
              102,    # seed
-             None, # background_image
+             None,  # background_image
              *scene_args)
 # Save the images and differences.
 pydiffvg.imwrite(img.cpu(), 'results/single_path/final.png')
 
 # Convert the intermediate renderings to a video.
-from subprocess import call
 call(["ffmpeg", "-framerate", "20", "-i",
-    "results/single_path/iter_%02d.png", "-vb", "20M",
-    "results/single_path/out.mp4"])
+      "results/single_path/iter_%02d.png", "-vb", "20M",
+      "results/single_path/out.mp4"])

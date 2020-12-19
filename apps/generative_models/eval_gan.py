@@ -1,22 +1,21 @@
 """Evaluate a pretrained GAN model.
 Usage:
 
-`python eval_gan.py <path/to/model/folder>`, e.g. 
+`python eval_gan.py <path/to/model/folder>`, e.g.
 `../results/quickdraw_gan_vector_bezier_fc_wgan`.
 
 """
-import os
 import argparse
-import torch as th
-import numpy as np
-import ttools
-import imageio
+import os
 from subprocess import call
 
+import imageio
+import numpy as np
 import pydiffvg
+import torch as th
+import ttools
 
-import models
-
+from . import models
 
 LOG = ttools.get_logger(__name__)
 
@@ -133,8 +132,8 @@ def run(args):
                                                "frame%04d.png" % frame_idx))
                 call(["ffmpeg", "-framerate", "30", "-i",
                       os.path.join(anim_root, "frame%04d.png"), "-vb", "20M",
-                     os.path.join(outdir,
-                                  "latent_interp_video", "%03d.mp4" % i)])
+                      os.path.join(outdir,
+                                   "latent_interp_video", "%03d.mp4" % i)])
         LOG.info("  saved %d", i)
 
     LOG.info("Sampling latent space")
@@ -160,7 +159,7 @@ if __name__ == "__main__":
     parser.add_argument("model")
     parser.add_argument("--output_dir", help="output directory for "
                         " the samples. Defaults to the model's path")
-    parser.add_argument("--nsamples", default=16, type=int, 
+    parser.add_argument("--nsamples", default=16, type=int,
                         help="number of output to compute")
     parser.add_argument("--imsize", type=int,
                         help="if provided, override the raster output "

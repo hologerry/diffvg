@@ -1,7 +1,7 @@
 """A simple training interface using ttools."""
 import argparse
 import os
-import logging
+# import logging
 import random
 
 import numpy as np
@@ -28,6 +28,7 @@ img_size = 32
 num_paths = 8
 num_segments = 8
 
+
 def weights_init_normal(m):
     classname = m.__class__.__name__
     if classname.find("Conv") != -1:
@@ -36,11 +37,14 @@ def weights_init_normal(m):
         torch.nn.init.normal_(m.weight.data, 1.0, 0.02)
         torch.nn.init.constant_(m.bias.data, 0.0)
 
+
 class VisdomImageCallback(ttools.callbacks.ImageDisplayCallback):
     def visualized_image(self, batch, fwd_result):
-        return torch.cat([batch[0], fwd_result.cpu()], dim = 2)
+        return torch.cat([batch[0], fwd_result.cpu()], dim=2)
 
 # From https://github.com/eriklindernoren/PyTorch-GAN/blob/master/implementations/dcgan/dcgan.py
+
+
 class Generator(torch.nn.Module):
     def __init__(self):
         super(Generator, self).__init__()
@@ -71,37 +75,38 @@ class Generator(torch.nn.Module):
                 index += 2 * (num_segments + 1)
                 stroke_width = img_size * out[b, index].view(1).cpu()
                 index += 1
-                
-                num_control_points = torch.zeros(num_segments, dtype = torch.int32) + 2
-                path = pydiffvg.Path(num_control_points = num_control_points,
-                                     points = points,
-                                     stroke_width = stroke_width,
-                                     is_closed = False)
+
+                num_control_points = torch.zeros(num_segments, dtype=torch.int32) + 2
+                path = pydiffvg.Path(num_control_points=num_control_points,
+                                     points=points,
+                                     stroke_width=stroke_width,
+                                     is_closed=False)
                 shapes.append(path)
-    
+
                 stroke_color = out[b, index].view(1).cpu()
                 index += 1
                 stroke_color = torch.cat([stroke_color, torch.tensor([0.0, 0.0, 1.0])])
-                path_group = pydiffvg.ShapeGroup(shape_ids = torch.tensor([len(shapes) - 1]),
-                                                 fill_color = None,
-                                                 stroke_color = stroke_color)
+                path_group = pydiffvg.ShapeGroup(shape_ids=torch.tensor([len(shapes) - 1]),
+                                                 fill_color=None,
+                                                 stroke_color=stroke_color)
                 shape_groups.append(path_group)
             scene_args = pydiffvg.RenderFunction.serialize_scene(img_size, img_size, shapes, shape_groups)
             render = pydiffvg.RenderFunction.apply
-            img = render(img_size, # width
-                         img_size, # height
+            img = render(img_size,  # width
+                         img_size,  # height
                          2,   # num_samples_x
                          2,   # num_samples_y
-                         random.randint(0, 1048576), # seed
+                         random.randint(0, 1048576),  # seed
                          None,
                          *scene_args)
             img = img[:, :, :1]
             # HWC -> NCHW
             img = img.unsqueeze(0)
-            img = img.permute(0, 3, 1, 2) # NHWC -> NCHW
+            img = img.permute(0, 3, 1, 2)  # NHWC -> NCHW
             imgs.append(img)
-        img = torch.cat(imgs, dim = 0)
+        img = torch.cat(imgs, dim=0)
         return img
+
 
 class Discriminator(torch.nn.Module):
     def __init__(self):
@@ -135,20 +140,22 @@ class Discriminator(torch.nn.Module):
 
         return validity
 
+
 class MNISTInterface(ttools.interfaces.SGANInterface):
     """An adapter to run or train a model."""
 
     def __init__(self, gen, discrim, lr=2e-4):
-        super(MNISTInterface, self).__init__(gen, discrim, lr, opt = 'adam')
+        super(MNISTInterface, self).__init__(gen, discrim, lr, opt='adam')
 
     def forward(self, batch):
-        return self.gen(torch.zeros([batch[0].shape[0], latent_dim], device = self.device).normal_())
+        return self.gen(torch.zeros([batch[0].shape[0], latent_dim], device=self.device).normal_())
 
     def _discriminator_input(self, batch, fwd_data, fake=False):
         if fake:
             return fwd_data
         else:
             return batch[0].to(self.device)
+
 
 def train(args):
     """Train a MNIST classifier."""
@@ -199,6 +206,7 @@ def train(args):
     # Start the training
     LOG.info("Training started, press Ctrl-C to interrupt.")
     trainer.train(loader, num_epochs=args.epochs)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

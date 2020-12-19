@@ -3,11 +3,11 @@
 
 Usage:
 
-* Train a MNIST model: 
+* Train a MNIST model:
 
 `python train_gan.py`
 
-* Train a Quickdraw model: 
+* Train a Quickdraw model:
 
 `python train_gan.py --task quickdraw`
 
@@ -22,9 +22,9 @@ from torch.utils.data import DataLoader
 import ttools
 import ttools.interfaces
 
-import losses
-import data
-import models
+from . import losses
+from . import data
+from . import models
 
 import pydiffvg
 
@@ -52,7 +52,7 @@ class Callback(ttools.callbacks.ImageDisplayCallback):
             vector = vector[:16].detach()
             vizdata = th.cat([vizdata, vector], 2)
 
-        vizdata = (vizdata + 1.0 ) * 0.5
+        vizdata = (vizdata + 1.0) * 0.5
         viz = th.clamp(vizdata, 0, 1)
         return viz
 
@@ -131,7 +131,7 @@ class Interface(ttools.ModelInterface):
         self.im_loss = losses.MultiscaleMSELoss(channels=4).to(self.device)
 
         self.iter = 0
-        
+
         self.cross_entropy = th.nn.BCEWithLogitsLoss()
         self.mse = th.nn.MSELoss()
 
@@ -368,13 +368,13 @@ def train(args):
         schedulers=interface.schedulers,
         prefix="g_")
     checkpointer_d = ttools.Checkpointer(
-        chkpt, discrim, 
+        chkpt, discrim,
         prefix="d_")
 
     # Resume from checkpoint, if any
     extras, _ = checkpointer.load_latest()
     checkpointer_d.load_latest()
-
+    checkpointer_vect, checkpointer_d_vect = None, None
     if not args.raster_only:
         checkpointer_vect = ttools.Checkpointer(
             chkpt, vect_gen, meta=meta,
@@ -382,7 +382,7 @@ def train(args):
             schedulers=interface.schedulers,
             prefix="vect_g_")
         checkpointer_d_vect = ttools.Checkpointer(
-            chkpt, vect_discrim, 
+            chkpt, vect_discrim,
             prefix="vect_d_")
         extras, _ = checkpointer_vect.load_latest()
         checkpointer_d_vect.load_latest()
@@ -437,7 +437,7 @@ if __name__ == "__main__":
     parser.add_argument("--task",
                         default="mnist",
                         choices=["mnist", "quickdraw"])
-    parser.add_argument("--generator", 
+    parser.add_argument("--generator",
                         default="bezier_fc",
                         choices=["bezier_fc", "fc", "rnn", "chain_rnn"],
                         help="model to use as generator")
@@ -450,7 +450,7 @@ if __name__ == "__main__":
                         help="if true, use regular GAN instead of WGAN")
 
     # Training params
-    parser.add_argument("--bs", type=int, default=4, help="batch size")
+    parser.add_argument("--bs", type=int, default=32, help="batch size")
     parser.add_argument("--workers", type=int, default=4,
                         help="number of dataloader threads")
     parser.add_argument("--num_epochs", type=int, default=200,

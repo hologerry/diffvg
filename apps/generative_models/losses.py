@@ -1,7 +1,6 @@
 """Losses for the generative models and baselines."""
-import torch as th
 import numpy as np
-
+import torch as th
 import ttools.modules.image_operators as imops
 
 
@@ -11,6 +10,7 @@ class KLDivergence(th.nn.Module):
         min_value(float): the loss is clipped so that value below this
             number don't affect the optimization.
     """
+
     def __init__(self, min_value=0.2):
         super(KLDivergence, self).__init__()
         self.min_value = min_value
@@ -35,7 +35,7 @@ class MultiscaleMSELoss(th.nn.Module):
         for lvl in range(num_levels):
             loss = th.nn.functional.mse_loss(im, target)
             losses.append(loss)
-            im = th.nn.functional.interpolate(self.blur(im), 
+            im = th.nn.functional.interpolate(self.blur(im),
                                               scale_factor=0.5,
                                               mode="nearest")
             target = th.nn.functional.interpolate(self.blur(target),
@@ -73,6 +73,7 @@ class GaussianMixtureReconstructionLoss(th.nn.Module):
     """
     Args:
     """
+
     def __init__(self, eps=1e-5):
         super(GaussianMixtureReconstructionLoss, self).__init__()
         self.eps = eps

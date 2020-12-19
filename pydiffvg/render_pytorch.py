@@ -7,13 +7,16 @@ import warnings
 
 print_timing = False
 
+
 def set_print_timing(val):
     global print_timing
-    print_timing=val
+    print_timing = val
+
 
 class OutputType(IntEnum):
     color = 1
     sdf = 2
+
 
 class RenderFunction(torch.autograd.Function):
     """
@@ -24,11 +27,11 @@ class RenderFunction(torch.autograd.Function):
                         canvas_height,
                         shapes,
                         shape_groups,
-                        filter = pydiffvg.PixelFilter(type = diffvg.FilterType.box,
-                                                      radius = torch.tensor(0.5)),
-                        output_type = OutputType.color,
-                        use_prefiltering = False,
-                        eval_positions = torch.tensor([])):
+                        filter=pydiffvg.PixelFilter(type=diffvg.FilterType.box,
+                                                    radius=torch.tensor(0.5)),
+                        output_type=OutputType.color,
+                        use_prefiltering=False,
+                        eval_positions=torch.tensor([])):
         """
             Given a list of shapes, convert them to a linear list of argument,
             so that we can use it in PyTorch.
@@ -77,13 +80,13 @@ class RenderFunction(torch.autograd.Function):
                 assert(shape.points.shape[1] == 2)
                 args.append(diffvg.ShapeType.path)
                 if shape.is_closed:
-                    args.append(torch.zeros(shape.points.shape[0], dtype = torch.int32))
+                    args.append(torch.zeros(shape.points.shape[0], dtype=torch.int32))
                 else:
-                    args.append(torch.zeros(shape.points.shape[0] - 1, dtype = torch.int32))
+                    args.append(torch.zeros(shape.points.shape[0] - 1, dtype=torch.int32))
                 args.append(shape.points.cpu())
-                args.append(None)  
+                args.append(None)
                 args.append(shape.is_closed)
-                args.append(False) # use_distance_approx
+                args.append(False)  # use_distance_approx
             elif isinstance(shape, pydiffvg.Rect):
                 assert(shape.p_min.is_contiguous())
                 assert(shape.p_max.is_contiguous())
@@ -201,8 +204,8 @@ class RenderFunction(torch.autograd.Function):
         current_index += 1
         shapes = []
         shape_groups = []
-        shape_contents = [] # Important to avoid GC deleting the shapes
-        color_contents = [] # Same as above
+        shape_contents = []  # Important to avoid GC deleting the shapes
+        color_contents = []  # Same as above
         for shape_id in range(num_shapes):
             shape_type = args[current_index]
             current_index += 1
@@ -248,7 +251,7 @@ class RenderFunction(torch.autograd.Function):
                 assert(False)
             stroke_width = args[current_index]
             current_index += 1
-            shapes.append(diffvg.Shape(\
+            shapes.append(diffvg.Shape(
                 shape_type, shape.get_ptr(), stroke_width.item()))
             shape_contents.append(shape)
 
@@ -260,7 +263,7 @@ class RenderFunction(torch.autograd.Function):
             if fill_color_type == diffvg.ColorType.constant:
                 color = args[current_index]
                 current_index += 1
-                fill_color = diffvg.Constant(\
+                fill_color = diffvg.Constant(
                     diffvg.Vector4f(color[0], color[1], color[2], color[3]))
             elif fill_color_type == diffvg.ColorType.linear_gradient:
                 beg = args[current_index]
@@ -301,7 +304,7 @@ class RenderFunction(torch.autograd.Function):
             if stroke_color_type == diffvg.ColorType.constant:
                 color = args[current_index]
                 current_index += 1
-                stroke_color = diffvg.Constant(\
+                stroke_color = diffvg.Constant(
                     diffvg.Vector4f(color[0], color[1], color[2], color[3]))
             elif stroke_color_type == diffvg.ColorType.linear_gradient:
                 beg = args[current_index]
@@ -346,7 +349,7 @@ class RenderFunction(torch.autograd.Function):
                 color_contents.append(fill_color)
             if stroke_color is not None:
                 color_contents.append(stroke_color)
-            shape_groups.append(diffvg.ShapeGroup(\
+            shape_groups.append(diffvg.ShapeGroup(
                 diffvg.int_ptr(shape_ids.data_ptr()),
                 shape_ids.shape[0],
                 diffvg.ColorType.constant if fill_color_type is None else fill_color_type,
@@ -364,29 +367,30 @@ class RenderFunction(torch.autograd.Function):
 
         start = time.time()
         scene = diffvg.Scene(canvas_width, canvas_height,
-            shapes, shape_groups, filt, pydiffvg.get_use_gpu(),
-            pydiffvg.get_device().index if pydiffvg.get_device().index is not None else -1)
+                             shapes, shape_groups, filt, pydiffvg.get_use_gpu(),
+                             pydiffvg.get_device().index if pydiffvg.get_device().index is not None else -1)
         time_elapsed = time.time() - start
         global print_timing
         if print_timing:
             print('Scene construction, time: %.5f s' % time_elapsed)
 
+        rendered_image = None
         if output_type == OutputType.color:
             assert(eval_positions.shape[0] == 0)
-            rendered_image = torch.zeros(height, width, 4, device = pydiffvg.get_device())
+            rendered_image = torch.zeros(height, width, 4, device=pydiffvg.get_device())
         else:
-            assert(output_type == OutputType.sdf)          
+            assert(output_type == OutputType.sdf)
             if eval_positions.shape[0] == 0:
-                rendered_image = torch.zeros(height, width, 1, device = pydiffvg.get_device())
+                rendered_image = torch.zeros(height, width, 1, device=pydiffvg.get_device())
             else:
-                rendered_image = torch.zeros(eval_positions.shape[0], 1, device = pydiffvg.get_device())
+                rendered_image = torch.zeros(eval_positions.shape[0], 1, device=pydiffvg.get_device())
 
         if background_image is not None:
             background_image = background_image.to(pydiffvg.get_device())
             if background_image.shape[2] == 3:
-                background_image = torch.cat((\
+                background_image = torch.cat((
                     background_image, torch.ones(background_image.shape[0], background_image.shape[1], 1,
-                        device = background_image.device)), dim = 2)
+                                                 device=background_image.device)), dim=2)
             background_image = background_image.contiguous()
             assert(background_image.shape[0] == rendered_image.shape[0])
             assert(background_image.shape[1] == rendered_image.shape[1])
@@ -402,10 +406,10 @@ class RenderFunction(torch.autograd.Function):
                       num_samples_x,
                       num_samples_y,
                       seed,
-                      diffvg.float_ptr(0), # d_background_image
-                      diffvg.float_ptr(0), # d_render_image
-                      diffvg.float_ptr(0), # d_render_sdf
-                      diffvg.float_ptr(0), # d_translation
+                      diffvg.float_ptr(0),  # d_background_image
+                      diffvg.float_ptr(0),  # d_render_image
+                      diffvg.float_ptr(0),  # d_render_sdf
+                      diffvg.float_ptr(0),  # d_translation
                       use_prefiltering,
                       diffvg.float_ptr(eval_positions.data_ptr()),
                       eval_positions.shape[0])
@@ -457,11 +461,11 @@ class RenderFunction(torch.autograd.Function):
         use_prefiltering = args[current_index]
         current_index += 1
         eval_positions = args[current_index]
-        current_index += 1        
+        current_index += 1
         shapes = []
         shape_groups = []
-        shape_contents = [] # Important to avoid GC deleting the shapes
-        color_contents = [] # Same as above
+        shape_contents = []  # Important to avoid GC deleting the shapes
+        color_contents = []  # Same as above
         for shape_id in range(num_shapes):
             shape_type = args[current_index]
             current_index += 1
@@ -507,7 +511,7 @@ class RenderFunction(torch.autograd.Function):
                 assert(False)
             stroke_width = args[current_index]
             current_index += 1
-            shapes.append(diffvg.Shape(\
+            shapes.append(diffvg.Shape(
                 shape_type, shape.get_ptr(), stroke_width.item()))
             shape_contents.append(shape)
 
@@ -519,7 +523,7 @@ class RenderFunction(torch.autograd.Function):
             if fill_color_type == diffvg.ColorType.constant:
                 color = args[current_index]
                 current_index += 1
-                fill_color = diffvg.Constant(\
+                fill_color = diffvg.Constant(
                     diffvg.Vector4f(color[0], color[1], color[2], color[3]))
             elif fill_color_type == diffvg.ColorType.linear_gradient:
                 beg = args[current_index]
@@ -560,7 +564,7 @@ class RenderFunction(torch.autograd.Function):
             if stroke_color_type == diffvg.ColorType.constant:
                 color = args[current_index]
                 current_index += 1
-                stroke_color = diffvg.Constant(\
+                stroke_color = diffvg.Constant(
                     diffvg.Vector4f(color[0], color[1], color[2], color[3]))
             elif stroke_color_type == diffvg.ColorType.linear_gradient:
                 beg = args[current_index]
@@ -605,7 +609,7 @@ class RenderFunction(torch.autograd.Function):
                 color_contents.append(fill_color)
             if stroke_color is not None:
                 color_contents.append(stroke_color)
-            shape_groups.append(diffvg.ShapeGroup(\
+            shape_groups.append(diffvg.ShapeGroup(
                 diffvg.int_ptr(shape_ids.data_ptr()),
                 shape_ids.shape[0],
                 diffvg.ColorType.constant if fill_color_type is None else fill_color_type,
@@ -622,8 +626,8 @@ class RenderFunction(torch.autograd.Function):
         filt = diffvg.Filter(filter_type, filter_radius)
 
         scene = diffvg.Scene(canvas_width, canvas_height,
-            shapes, shape_groups, filt, pydiffvg.get_use_gpu(),
-            pydiffvg.get_device().index if pydiffvg.get_device().index is not None else -1)
+                             shapes, shape_groups, filt, pydiffvg.get_use_gpu(),
+                             pydiffvg.get_device().index if pydiffvg.get_device().index is not None else -1)
 
         if output_type == OutputType.color:
             assert(grad_img.shape[2] == 4)
@@ -633,27 +637,27 @@ class RenderFunction(torch.autograd.Function):
         if background_image is not None:
             background_image = background_image.to(pydiffvg.get_device())
             if background_image.shape[2] == 3:
-                background_image = torch.cat((\
+                background_image = torch.cat((
                     background_image, torch.ones(background_image.shape[0], background_image.shape[1], 1,
-                        device = background_image.device)), dim = 2)
+                                                 device=background_image.device)), dim=2)
             background_image = background_image.contiguous()
-            assert(background_image.shape[0] == rendered_image.shape[0])
-            assert(background_image.shape[1] == rendered_image.shape[1])
+            # assert(background_image.shape[0] == rendered_image.shape[0])
+            # assert(background_image.shape[1] == rendered_image.shape[1])
             assert(background_image.shape[2] == 4)
 
         translation_grad_image = \
-            torch.zeros(height, width, 2, device = pydiffvg.get_device())
+            torch.zeros(height, width, 2, device=pydiffvg.get_device())
         start = time.time()
         diffvg.render(scene,
                       diffvg.float_ptr(background_image.data_ptr() if background_image is not None else 0),
-                      diffvg.float_ptr(0), # render_image
-                      diffvg.float_ptr(0), # render_sdf
+                      diffvg.float_ptr(0),  # render_image
+                      diffvg.float_ptr(0),  # render_sdf
                       width,
                       height,
                       num_samples_x,
                       num_samples_y,
                       seed,
-                      diffvg.float_ptr(0), # d_background_image
+                      diffvg.float_ptr(0),  # d_background_image
                       diffvg.float_ptr(grad_img.data_ptr() if output_type == OutputType.color else 0),
                       diffvg.float_ptr(grad_img.data_ptr() if output_type == OutputType.sdf else 0),
                       diffvg.float_ptr(translation_grad_image.data_ptr()),
@@ -693,8 +697,8 @@ class RenderFunction(torch.autograd.Function):
         start = time.time()
         diffvg.render(scene,
                       diffvg.float_ptr(background_image.data_ptr() if background_image is not None else 0),
-                      diffvg.float_ptr(0), # render_image
-                      diffvg.float_ptr(0), # render_sdf
+                      diffvg.float_ptr(0),  # render_image
+                      diffvg.float_ptr(0),  # render_sdf
                       width,
                       height,
                       num_samples_x,
@@ -703,7 +707,7 @@ class RenderFunction(torch.autograd.Function):
                       diffvg.float_ptr(d_background_image.data_ptr() if background_image is not None else 0),
                       diffvg.float_ptr(grad_img.data_ptr() if output_type == OutputType.color else 0),
                       diffvg.float_ptr(grad_img.data_ptr() if output_type == OutputType.sdf else 0),
-                      diffvg.float_ptr(0), # d_translation
+                      diffvg.float_ptr(0),  # d_translation
                       use_prefiltering,
                       diffvg.float_ptr(eval_positions.data_ptr()),
                       eval_positions.shape[0])
@@ -713,21 +717,21 @@ class RenderFunction(torch.autograd.Function):
             print('Backward pass, time: %.5f s' % time_elapsed)
 
         d_args = []
-        d_args.append(None) # width
-        d_args.append(None) # height
-        d_args.append(None) # num_samples_x
-        d_args.append(None) # num_samples_y
-        d_args.append(None) # seed
+        d_args.append(None)  # width
+        d_args.append(None)  # height
+        d_args.append(None)  # num_samples_x
+        d_args.append(None)  # num_samples_y
+        d_args.append(None)  # seed
         d_args.append(d_background_image)
-        d_args.append(None) # canvas_width
-        d_args.append(None) # canvas_height
-        d_args.append(None) # num_shapes
-        d_args.append(None) # num_shape_groups
-        d_args.append(None) # output_type
-        d_args.append(None) # use_prefiltering
-        d_args.append(None) # eval_positions
+        d_args.append(None)  # canvas_width
+        d_args.append(None)  # canvas_height
+        d_args.append(None)  # num_shapes
+        d_args.append(None)  # num_shape_groups
+        d_args.append(None)  # output_type
+        d_args.append(None)  # use_prefiltering
+        d_args.append(None)  # eval_positions
         for shape_id in range(scene.num_shapes):
-            d_args.append(None) # type
+            d_args.append(None)  # type
             d_shape = scene.get_d_shape(shape_id)
             use_thickness = False
             if d_shape.type == diffvg.ShapeType.circle:
@@ -762,11 +766,11 @@ class RenderFunction(torch.autograd.Function):
                 assert(torch.isfinite(points).all())
                 if thickness is not None:
                     assert(torch.isfinite(thickness).all())
-                d_args.append(None) # num_control_points
+                d_args.append(None)  # num_control_points
                 d_args.append(points)
                 d_args.append(thickness)
-                d_args.append(None) # is_closed
-                d_args.append(None) # use_distance_approx
+                d_args.append(None)  # is_closed
+                d_args.append(None)  # use_distance_approx
             elif d_shape.type == diffvg.ShapeType.rect:
                 d_rect = d_shape.as_rect()
                 p_min = torch.tensor((d_rect.p_min.x, d_rect.p_min.y))
@@ -786,8 +790,8 @@ class RenderFunction(torch.autograd.Function):
 
         for group_id in range(scene.num_shape_groups):
             d_shape_group = scene.get_d_shape_group(group_id)
-            d_args.append(None) # shape_ids
-            d_args.append(None) # fill_color_type
+            d_args.append(None)  # shape_ids
+            d_args.append(None)  # fill_color_type
             if d_shape_group.has_fill_color():
                 if d_shape_group.fill_color_type == diffvg.ColorType.constant:
                     d_constant = d_shape_group.fill_color_as_constant()
@@ -801,7 +805,7 @@ class RenderFunction(torch.autograd.Function):
                     d_args.append(torch.tensor((end.x, end.y)))
                     offsets = torch.zeros((d_linear_gradient.num_stops))
                     stop_colors = torch.zeros((d_linear_gradient.num_stops, 4))
-                    d_linear_gradient.copy_to(\
+                    d_linear_gradient.copy_to(
                         diffvg.float_ptr(offsets.data_ptr()),
                         diffvg.float_ptr(stop_colors.data_ptr()))
                     assert(torch.isfinite(stop_colors).all())
@@ -815,7 +819,7 @@ class RenderFunction(torch.autograd.Function):
                     d_args.append(torch.tensor((radius.x, radius.y)))
                     offsets = torch.zeros((d_radial_gradient.num_stops))
                     stop_colors = torch.zeros((d_radial_gradient.num_stops, 4))
-                    d_radial_gradient.copy_to(\
+                    d_radial_gradient.copy_to(
                         diffvg.float_ptr(offsets.data_ptr()),
                         diffvg.float_ptr(stop_colors.data_ptr()))
                     assert(torch.isfinite(stop_colors).all())
@@ -823,7 +827,7 @@ class RenderFunction(torch.autograd.Function):
                     d_args.append(stop_colors)
                 else:
                     assert(False)
-            d_args.append(None) # stroke_color_type
+            d_args.append(None)  # stroke_color_type
             if d_shape_group.has_stroke_color():
                 if d_shape_group.stroke_color_type == diffvg.ColorType.constant:
                     d_constant = d_shape_group.stroke_color_as_constant()
@@ -837,7 +841,7 @@ class RenderFunction(torch.autograd.Function):
                     d_args.append(torch.tensor((end.x, end.y)))
                     offsets = torch.zeros((d_linear_gradient.num_stops))
                     stop_colors = torch.zeros((d_linear_gradient.num_stops, 4))
-                    d_linear_gradient.copy_to(\
+                    d_linear_gradient.copy_to(
                         diffvg.float_ptr(offsets.data_ptr()),
                         diffvg.float_ptr(stop_colors.data_ptr()))
                     assert(torch.isfinite(stop_colors).all())
@@ -851,7 +855,7 @@ class RenderFunction(torch.autograd.Function):
                     d_args.append(torch.tensor((radius.x, radius.y)))
                     offsets = torch.zeros((d_radial_gradient.num_stops))
                     stop_colors = torch.zeros((d_radial_gradient.num_stops, 4))
-                    d_radial_gradient.copy_to(\
+                    d_radial_gradient.copy_to(
                         diffvg.float_ptr(offsets.data_ptr()),
                         diffvg.float_ptr(stop_colors.data_ptr()))
                     assert(torch.isfinite(stop_colors).all())
@@ -859,12 +863,12 @@ class RenderFunction(torch.autograd.Function):
                     d_args.append(stop_colors)
                 else:
                     assert(False)
-            d_args.append(None) # use_even_odd_rule
+            d_args.append(None)  # use_even_odd_rule
             d_shape_to_canvas = torch.zeros((3, 3))
             d_shape_group.copy_to(diffvg.float_ptr(d_shape_to_canvas.data_ptr()))
             assert(torch.isfinite(d_shape_to_canvas).all())
             d_args.append(d_shape_to_canvas)
-        d_args.append(None) # filter_type
+        d_args.append(None)  # filter_type
         d_args.append(torch.tensor(scene.get_d_filter_radius()))
 
         return tuple(d_args)
