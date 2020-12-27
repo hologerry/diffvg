@@ -15,7 +15,7 @@ import pydiffvg
 import torch as th
 import ttools
 
-from . import models
+import models
 
 LOG = ttools.get_logger(__name__)
 

@@ -27,7 +27,7 @@ import ttools
 import ttools.interfaces
 from torch.utils.data import DataLoader
 
-from .modules import Flatten
+from modules import Flatten
 
 LOG = ttools.get_logger(__name__)
 

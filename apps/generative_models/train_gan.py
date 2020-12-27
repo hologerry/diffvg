@@ -22,9 +22,9 @@ from torch.utils.data import DataLoader
 import ttools
 import ttools.interfaces
 
-from . import losses
-from . import data
-from . import models
+import losses
+import data
+import models
 
 import pydiffvg
 

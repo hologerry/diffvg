@@ -8,7 +8,7 @@ import torchvision.datasets as dset
 import torchvision.transforms as transforms
 import ttools
 
-from . import rendering
+import rendering
 
 BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir)
 DATA = os.path.join(BASE_DIR, "data")

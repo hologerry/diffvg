@@ -3,8 +3,8 @@
 import torch as th
 import ttools
 
-from . import rendering
-from . import modules
+import rendering
+import modules
 
 LOG = ttools.get_logger(__name__)
 

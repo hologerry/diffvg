@@ -15,9 +15,9 @@ import ttools.interfaces
 from torch.utils.data import DataLoader
 # from ttools.modules import networks
 
-from . import data
-from . import losses
-from . import rendering
+import data
+import losses
+import rendering
 
 LOG = ttools.get_logger(__name__)
 
@@ -452,7 +452,7 @@ if __name__ == "__main__":
 
     # Viz params
     parser.add_argument("--freq", type=int, default=100)
-    parser.add_argument("--port", type=int, default=5000)
+    parser.add_argument("--port", type=int, default=9999)
 
     args = parser.parse_args()
 
