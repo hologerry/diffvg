@@ -45,6 +45,7 @@ if __name__ == "__main__":
     # parser.add_argument("svg_dirs", help="source SVG path")
     # args = parser.parse_args()
     styles = ['4', '9', '14', '30']
+    # styles = ['30']
     for s in styles:
         svg_dirs = f'partial_svg_diffvg/style_{s}'
         main(svg_dirs)

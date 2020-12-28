@@ -10,7 +10,8 @@ gamma = 1.0
 def main(target_path, svg_path, output_dir, num_iter=1000, use_lpips_loss=False):
     perception_loss = ttools.modules.LPIPS().to(pydiffvg.get_device())
 
-    target = torch.from_numpy(skimage.io.imread(target_path)).to(torch.float32) / 255.0
+    target = torch.from_numpy(skimage.io.imread(target_path, as_gray=False, pilmode="RGB")).to(torch.float32) / 255.0
+    print("target", target.size())
     target = target.pow(gamma)
     target = target.to(pydiffvg.get_device())
     target = target.unsqueeze(0)
@@ -116,13 +117,26 @@ if __name__ == "__main__":
     # parser.add_argument("--use_lpips_loss", dest='use_lpips_loss', action='store_true')
     # parser.add_argument("--num_iter", type=int, default=2500)
     # args = parser.parse_args()
-    styles = ['4', '9', '14', '30']
-    chars = ['A', 'B', 'C', 'D']
+    # main(args)
+    # styles = ['4', '9', '14', '30']
+    # chars = ['A', 'B', 'C', 'D']
+    # styles = ['30']
+    # chars = ['C']
+    # num_iter = 2500
+    # use_lpips_loss = False
+    # for s in styles:
+    #     for c in chars:
+    #         target_path = f'partial_svg_diffvg/style_{s}/real_{c}_scale.png'
+    #         svg_path = f'partial_svg_diffvg/style_{s}/fake_{c}_scale.svg'
+    #         output_dir = f'results/refine_svg_style_{s}_{c}'
+    #         main(target_path, svg_path, output_dir, num_iter, use_lpips_loss)
     num_iter = 2500
     use_lpips_loss = False
-    for s in styles:
-        for c in chars:
-            target_path = f'partial_svg_diffvg/style_{s}/real_{c}_scale.png'
-            svg_path = f'partial_svg_diffvg/style_{s}/fake_{c}_scale.svg'
-            output_dir = f'results/refine_svg_style_{s}_{c}'
-            main(target_path, svg_path, output_dir, num_iter, use_lpips_loss)
+    target_img_size = 64
+    chars = ['A', 'B', 'C', 'D']
+    char_ids = ['10', '11', '12', '13']
+    for i, c in zip(char_ids, chars):
+        target_path = f'vae_generated_imgs_whitebg/{i}.bmp'
+        svg_path = f'vae_generated_svgs/fake_{c}_scale_{target_img_size}.svg'
+        output_dir = f'results/refine_svg_vae_gen_{i}_{c}'
+        main(target_path, svg_path, output_dir, num_iter, use_lpips_loss)

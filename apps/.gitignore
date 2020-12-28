@@ -2,3 +2,4 @@ mnist
 data/sketchrnn_cat.npz
 data
 partial_svg_diffvg
+vae_generated_*
