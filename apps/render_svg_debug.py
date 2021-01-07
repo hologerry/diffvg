@@ -31,6 +31,14 @@ def main(args):
     print("canvas_width", canvas_width)
     print("canvas_height", canvas_height)
     print("shapes", shapes)
+    for shape in shapes:
+        print("num_control_points", shape.num_control_points.size(), shape.num_control_points)
+        print("points", shape.points.size(), shape.points)
+        print("is_closed", shape.is_closed)
+        print("stroke_width", shape.stroke_width.size(), shape.stroke_width)
+        print("id", shape.id)
+        print("use_distance_approx", shape.use_distance_approx)
+
     print("shape_groups", shape_groups)
     pydiffvg.save_svg_paths_only(save_svg_path, canvas_width, canvas_height, shapes, shape_groups)
 

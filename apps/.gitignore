@@ -3,3 +3,5 @@ data/sketchrnn_cat.npz
 data
 partial_svg_diffvg
 vae_generated_*
+multi_outline_test
+random_svgs

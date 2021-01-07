@@ -41,17 +41,17 @@ def main(target_path, svg_path, output_dir, num_iter=1000, use_lpips_loss=False)
     for group in shape_groups:
         group.fill_color.requires_grad = True
         color_vars[group.fill_color.data_ptr()] = group.fill_color
-    color_vars = list(color_vars.values())
+    # color_vars = list(color_vars.values())
 
     # Optimize
-    points_optim = torch.optim.Adam(points_vars, lr=1.0)
-    color_optim = torch.optim.Adam(color_vars, lr=0.01)
+    points_optim = torch.optim.Adam(points_vars, lr=0.1)
+    # color_optim = torch.optim.Adam(color_vars, lr=0.01)
 
     # Adam iterations.
     for t in range(num_iter):
         print('iteration:', t)
         points_optim.zero_grad()
-        color_optim.zero_grad()
+        # color_optim.zero_grad()
         # Forward pass: render the image.
         scene_args = pydiffvg.RenderFunction.serialize_scene(
             canvas_width, canvas_height, shapes, shape_groups)
@@ -83,13 +83,13 @@ def main(target_path, svg_path, output_dir, num_iter=1000, use_lpips_loss=False)
 
         # Take a gradient descent step.
         points_optim.step()
-        color_optim.step()
+        # color_optim.step()
         for group in shape_groups:
             group.fill_color.data.clamp_(0.0, 1.0)
 
         if t % 10 == 0 or t == num_iter - 1:
-            pydiffvg.save_svg(f'{output_dir}/iter_{t}.svg',
-                              canvas_width, canvas_height, shapes, shape_groups)
+            pydiffvg.save_svg_paths_only(f'{output_dir}/iter_{t}.svg',
+                                         canvas_width, canvas_height, shapes, shape_groups)
 
     # Render the final result.
     scene_args = pydiffvg.RenderFunction.serialize_scene(
@@ -118,25 +118,29 @@ if __name__ == "__main__":
     # parser.add_argument("--num_iter", type=int, default=2500)
     # args = parser.parse_args()
     # main(args)
-    # styles = ['4', '9', '14', '30']
-    # chars = ['A', 'B', 'C', 'D']
+    styles = ['4', '9', '14', '30']
+    chars = ['A', 'B', 'C', 'D']
     # styles = ['30']
     # chars = ['C']
-    # num_iter = 2500
-    # use_lpips_loss = False
-    # for s in styles:
-    #     for c in chars:
-    #         target_path = f'partial_svg_diffvg/style_{s}/real_{c}_scale.png'
-    #         svg_path = f'partial_svg_diffvg/style_{s}/fake_{c}_scale.svg'
-    #         output_dir = f'results/refine_svg_style_{s}_{c}'
-    #         main(target_path, svg_path, output_dir, num_iter, use_lpips_loss)
     num_iter = 2500
     use_lpips_loss = False
-    target_img_size = 64
-    chars = ['A', 'B', 'C', 'D']
-    char_ids = ['10', '11', '12', '13']
-    for i, c in zip(char_ids, chars):
-        target_path = f'vae_generated_imgs_whitebg/{i}.bmp'
-        svg_path = f'vae_generated_svgs/fake_{c}_scale_{target_img_size}.svg'
-        output_dir = f'results/refine_svg_vae_gen_{i}_{c}'
-        main(target_path, svg_path, output_dir, num_iter, use_lpips_loss)
+    for s in styles:
+        for c in chars:
+            target_path = f'partial_svg_diffvg/style_{s}/real_{c}_scale.png'
+            svg_path = f'partial_svg_diffvg/style_{s}/fake_{c}_scale.svg'
+            output_dir = f'results/refine_svg_style_{s}_{c}'
+            main(target_path, svg_path, output_dir, num_iter, use_lpips_loss)
+    # num_iter = 2500
+    # use_lpips_loss = False
+    # target_img_size = 64
+    # chars = ['A', 'B', 'C', 'D']
+    # char_ids = ['10', '11', '12', '13']
+    # for i, c in zip(char_ids, chars):
+    #     target_path = f'vae_generated_imgs_whitebg/{i}.bmp'
+    #     svg_path = f'vae_generated_svgs/fake_{c}_scale_{target_img_size}.svg'
+    #     output_dir = f'results/refine_svg_vae_gen_{i}_{c}'
+    #     main(target_path, svg_path, output_dir, num_iter, use_lpips_loss)
+    # target_path = f'multi_outline_test/letter-b-target-new.bmp'
+    # svg_path = f'multi_outline_test/letter-b-64.svg'
+    # output_dir = f'results/multi_outline_test_b'
+    # main(target_path, svg_path, output_dir, num_iter, use_lpips_loss)

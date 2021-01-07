@@ -1,15 +1,18 @@
 import os
+import random
 
-svg_dirs = 'vae_generated_svgs'
-chars = "ABCD"
-types = ['real', 'fake']
+svg_dirs = 'random_svgs'
+chars = "A"
+types = ['fake']
 target_size = 64
-scalar = target_size / 24
+# scalar = target_size / 24
 
 def multiply(num_str):
     is_number = False
+    scalar = random.randint(-64, 64) * 1.0
     try:
         num = str(float(num_str) * scalar)
+        num = str(scalar)
         is_number = True
     except Exception:
         num = num_str
@@ -36,7 +39,8 @@ for t in types:
                     converted.append('"'.join(new_num))
 
             new_line = ' '.join(converted)
-            new_line = new_line.replace('50px', f'{50*scalar}px')
+            # new_line = new_line.replace('50px', f'{50*scalar}px')
+            new_line = new_line.replace('50px', f'{133.33333}px')
             # new_line = new_line.replace('24"', f'{24*scalar}"')
             new_lines.append(new_line)
 

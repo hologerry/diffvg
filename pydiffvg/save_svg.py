@@ -224,7 +224,7 @@ def save_svg_paths_only(filename, width, height, shapes, shape_groups, use_gamma
                 num_control_points = shape.num_control_points.data.cpu().numpy()
                 points = shape.points.data.cpu().numpy()
                 num_points = shape.points.shape[0]
-                path_str += 'M {} {}'.format(points[0, 0], points[0, 1])
+                path_str += ' M {} {}'.format(points[0, 0], points[0, 1])
                 point_id = 1
                 for j in range(0, num_segments):
                     if num_control_points[j] == 0:
